@@ -1,21 +1,8 @@
 #pragma once
 #include <vector>
 
-#define PhysW 1280
-#define PhysH 720
-#define UP 1
-#define DOWN 2
-#define LEFT 3
-#define RIGHT 4
-#define BARRIER 1
-#define SNAKE 2
-#define APPLE 3
-
-struct PhysicalObject
-{
-	int texture = 0;
-	int type = 0;
-};
+#include "PhysicalObject.h"
+#include "FrameRenderingInput.h"
 
 struct SnakeBlock
 {
@@ -48,4 +35,5 @@ public:
 	void ShortenSnake(int snake_id);
 	void MoveSnakes();
 	void ChangeSnakeDirection(int snake_id, char dir);
+	FrameRenderingInput GetFrameRenderingInput();
 };

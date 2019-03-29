@@ -31,10 +31,10 @@ int GamePlayEngine::SpawnSnake(int size, int headx, int heady, char headdir)
 		sb.dir = headdir;
 		switch (headdir)
 		{
-		case UP: blocky = heady + i; break;
-		case DOWN: blocky = heady - i; break;
-		case LEFT: blockx = headx - i; break;
-		case RIGHT: blockx = headx + i; break;
+		case UP: blocky = heady - i; break;
+		case DOWN: blocky = heady + i; break;
+		case LEFT: blockx = headx + i; break;
+		case RIGHT: blockx = headx - i; break;
 		}
 		sb.x = blockx;
 		sb.y = blocky;
@@ -114,4 +114,9 @@ void GamePlayEngine::ChangeSnakeDirection(int snake_id, char dir)
 {
 	// TODO params verification
 	snakes.at(snake_id).snake[0].dir = dir;
+}
+
+FrameRenderingInput GamePlayEngine::GetFrameRenderingInput()
+{
+	return { physics, physw, physh };
 }
