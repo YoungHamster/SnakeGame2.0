@@ -1,20 +1,7 @@
 #pragma once
-#include <vector>
 
-#include "PhysicalObject.h"
+#include "GamePlayStructsAndDefines.h"
 #include "FrameRenderingInput.h"
-
-struct SnakeBlock
-{
-	int x;
-	int y;
-	char dir;
-};
-
-struct Snake
-{
-	std::vector<SnakeBlock> snake;
-};
 
 class GamePlayEngine
 {

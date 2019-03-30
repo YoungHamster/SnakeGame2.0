@@ -5,17 +5,19 @@
 
 static bool programRunning = true;
 
+static std::vector<WPARAM> inputBuffer;
+
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+void ProcessInput();
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR cmd, int nCmdShow)
 {
 	Renderer renderer(hInstance, WindowProc, nCmdShow);
 	GamePlayEngine gamePlayEngine(32, 18);
-	gamePlayEngine.SpawnSnake(10, 10, 5, LEFT);
-	gamePlayEngine.SpawnSnake(10, 15, 10, LEFT);
-	gamePlayEngine.SpawnSnake(10, 20, 15, LEFT);
 	MSG msg;
 	msg.message = WM_NULL;
+
+	int newSnakey = 1;
 	while (programRunning)
 	{
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
@@ -24,6 +26,20 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR cmd, in
 		}
 		else
 		{
+			if (inputBuffer.size() > 0)
+			{
+				switch (inputBuffer[0])
+				{
+				case VK_RETURN:
+					gamePlayEngine.MoveSnakes();
+					break;
+				case VK_F1:
+					gamePlayEngine.SpawnSnake(3, 10, newSnakey, LEFT);
+					newSnakey += 1;
+					break;
+				}
+				inputBuffer.erase(inputBuffer.begin());
+			}
 			renderer.RenderFrame(gamePlayEngine.GetFrameRenderingInput());
 		}
 	}
@@ -33,11 +49,16 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR cmd, in
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	if (uMsg == WM_DESTROY)
+	switch (uMsg)
 	{
+	case WM_DESTROY:
 		programRunning = false;
 		PostQuitMessage(0);
 		return 0;
+		break;
+	case WM_KEYDOWN:
+		inputBuffer.push_back(wParam);
+		break;
 	}
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }

@@ -58,7 +58,12 @@ int GamePlayEngine::SpawnSnake(int size, int headx, int heady, char headdir)
 void GamePlayEngine::DespawnSnake(int snake_id)
 {
 	// TODO params verification
+	for (int i = 0; i < snakes[snake_id].snake.size(); i++)
+	{
+		ChangeObject(snakes[snake_id].snake[i].x, snakes[snake_id].snake[i].y, 1, 0);
+	}
 	snakes.erase(snakes.begin() + snake_id);
+	number_of_snakes -= 1;
 }
 
 void GamePlayEngine::FeedSnake(int snake_id)
@@ -99,10 +104,11 @@ void GamePlayEngine::MoveSnakes()
 		}
 		switch (GetObjType(x, y))
 		{
-		case BARRIER: DespawnSnake(i); break;
+		case BARRIER: DespawnSnake(i); i -= 1; continue; break;
 		case APPLE: FeedSnake(i); break;
 		}
 		ChangeObject(snakes.at(i).snake[snakes.at(i).snake.size() - 1].x, snakes.at(i).snake[snakes.at(i).snake.size() - 1].y, 1/*TODO*/, 0);
+		ChangeObject(x, y, 1/*TODO*/, SNAKE);
 		for (int j = 0; j < snakes.at(i).snake.size(); j++)
 		{
 			int id = snakes.at(i).snake.size() - j - 1;
@@ -129,5 +135,5 @@ void GamePlayEngine::ChangeSnakeDirection(int snake_id, char dir)
 
 FrameRenderingInput GamePlayEngine::GetFrameRenderingInput()
 {
-	return { physics, physw, physh };
+	return { physics, physw, physh, &snakes };
 }

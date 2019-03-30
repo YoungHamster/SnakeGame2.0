@@ -1,21 +1,17 @@
 #pragma once
 
 #include <Windows.h>
-#include <d2d1.h>
-#include <vector>
-#include <wincodec.h>
 #include <string>
 
-#include "PhysicalObject.h"
+#include <d2d1.h>
+#include <wincodec.h>
+
+#include "GamePlayStructsAndDefines.h"
 #include "FrameRenderingInput.h"
 
-#define RENDERER
-
-#define BITMAPSNUMBER 80
+#define BITMAPSNUMBER 81
 #define SCREENWIDTH 1280
 #define SCREENHEIGTH 720
-#define GAMEFIELDHEIGTH (SCREENHEIGTH / 30)
-#define GAMEFIELDWIDTH (SCREENWIDTH / 30)
 
 enum RendererErrors
 {
@@ -37,7 +33,7 @@ private:
 
 	std::vector<RendererErrors> rendererErrors;
 
-	D2D1::ColorF backgroundColor = { 0.0f, 0.0f, 0.0f };
+	D2D1::ColorF backgroundColor = { 0.8f, 0.5f, 0.5f };
 
 	void BeginDraw() { rendertarget->BeginDraw(); }
 	void EndDraw() { rendertarget->EndDraw(); }
@@ -45,26 +41,15 @@ private:
 	bool LoadID2D1Bitmap(LPCWSTR filename, ID2D1Bitmap **ppBitmap);
 	void DrawBitmap(ID2D1Bitmap* bmp, RECT* rect, RECT* srcrect, float opacity);
 
-	void DrawTextOnRend(const wchar_t* text, int Size, int minX, int minY);
-	//void RenderButton(button button);
-
 public:
 	
 	Renderer(HINSTANCE hInstance, LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam), int nCmdShow);
 	~Renderer();
-	//bool Init(HWND windowhandle); Deprecated
-	//void RenderFrame(std::vector<PhysicalObject>& physics, std::vector<button>& buttons, bool menumode); Deprecated
 	void RenderFrame(FrameRenderingInput renderingInput);
 	HWND GetWindowHandle() { return windowHandle; }
-	/* Counts text width in pixels */
-	int CountTextWidth(const wchar_t* text, int Size);
 
 	D2D1_SIZE_U GetRenderTargetSize();
 
 	RendererErrors GetLastRendererError();
 
 };
-
-int wstrlen(const wchar_t* str);
-
-wchar_t* wstrcat(const wchar_t *str1, const wchar_t *str2);
