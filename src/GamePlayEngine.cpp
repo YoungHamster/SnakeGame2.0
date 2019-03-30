@@ -5,6 +5,22 @@ GamePlayEngine::GamePlayEngine(int physw, int physh)
 	this->physw = physw;
 	this->physh = physh;
 	physics = new PhysicalObject[physw*physh];
+	for (int i = 0; i < physw; i++)
+	{
+		ChangeObject(i, 0, 1, BARRIER);
+	}
+	for (int i = 0; i < physw; i++)
+	{
+		ChangeObject(i, physh - 1, 1, BARRIER);
+	}
+	for (int i = 1; i < physh; i++)
+	{
+		ChangeObject(0, i, 1, BARRIER);
+	}
+	for (int i = 1; i < physh; i++)
+	{
+		ChangeObject(physw - 1, i, 1, BARRIER);
+	}
 }
 
 GamePlayEngine::~GamePlayEngine()
@@ -13,9 +29,9 @@ GamePlayEngine::~GamePlayEngine()
 	snakes.clear();
 }
 
-void GamePlayEngine::ChangeObject(int x, int y, int texture, int type) { physics[x*physw + y].texture = texture; physics[x*physw + y].type = type; }
+void GamePlayEngine::ChangeObject(int x, int y, int texture, int type) { physics[y*physw + x].texture = texture; physics[y*physw + x].type = type; }
 
-int GamePlayEngine::GetObjType(int x, int y) { return physics[x*physw + y].type; }
+int GamePlayEngine::GetObjType(int x, int y) { return physics[y*physw + x].type; }
 
 int GamePlayEngine::SpawnSnake(int size, int headx, int heady, char headdir)
 {
@@ -23,21 +39,16 @@ int GamePlayEngine::SpawnSnake(int size, int headx, int heady, char headdir)
 	snakes.push_back(Snake());
 	number_of_snakes += 1;
 	snakes.at(number_of_snakes - 1).snake.resize(size);
-	int blockx = headx;
-	int blocky = heady;
+	SnakeBlock sb = { headx, heady, headdir };
 	for (int i = 0; i < size; i++)
 	{
-		SnakeBlock sb;
-		sb.dir = headdir;
 		switch (headdir)
 		{
-		case UP: blocky = heady - i; break;
-		case DOWN: blocky = heady + i; break;
-		case LEFT: blockx = headx + i; break;
-		case RIGHT: blockx = headx - i; break;
+		case UP: sb.y = heady - i; break;
+		case DOWN: sb.y = heady + i; break;
+		case LEFT: sb.x = headx + i; break;
+		case RIGHT: sb.x = headx - i; break;
 		}
-		sb.x = blockx;
-		sb.y = blocky;
 		snakes.at(number_of_snakes - 1).snake[i] = sb;
 		ChangeObject(sb.x, sb.y, 1/*TODO*/, SNAKE);
 	}

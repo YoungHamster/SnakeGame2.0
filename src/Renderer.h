@@ -27,6 +27,8 @@ enum RendererErrors
 class Renderer
 {
 private:
+	HWND windowHandle;
+
 	ID2D1Factory * factory;
 	ID2D1HwndRenderTarget* rendertarget;
 
@@ -53,7 +55,7 @@ public:
 	//bool Init(HWND windowhandle); Deprecated
 	//void RenderFrame(std::vector<PhysicalObject>& physics, std::vector<button>& buttons, bool menumode); Deprecated
 	void RenderFrame(FrameRenderingInput renderingInput);
-
+	HWND GetWindowHandle() { return windowHandle; }
 	/* Counts text width in pixels */
 	int CountTextWidth(const wchar_t* text, int Size);
 

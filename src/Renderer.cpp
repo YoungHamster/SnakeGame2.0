@@ -19,6 +19,8 @@ Renderer::Renderer(HINSTANCE hInstance, LRESULT CALLBACK WindowProc(HWND hwnd, U
 		rect.right - rect.left, rect.bottom - rect.top, NULL, NULL, hInstance, 0);
 	if (!windowHandle) return;
 
+	this->windowHandle = windowHandle;
+
 	ShowWindow(windowHandle, nCmdShow);
 
 	HRESULT res = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &factory);
@@ -125,10 +127,8 @@ Renderer::Renderer(HINSTANCE hInstance, LRESULT CALLBACK WindowProc(HWND hwnd, U
 
 Renderer::~Renderer()
 {
-	for (int i = 0; i < BITMAPSNUMBER; i++)
-	{
-		if (bitmaps[i]) bitmaps[i]->Release();
-	}
+	factory->Release();
+	rendertarget->Release();
 }
 
 void Renderer::RenderFrame(FrameRenderingInput renderingInput)
@@ -143,7 +143,13 @@ void Renderer::RenderFrame(FrameRenderingInput renderingInput)
 		{
 			if (renderingInput.physics[i*renderingInput.physicsWidth + j].type == SNAKE)
 			{
-				DrawBitmap(bitmaps[4], &RECT({ LONG(j * pixelsperblockw), LONG(i * pixelsperblockh), LONG((j + 1) * pixelsperblockw), LONG((i + 1) * pixelsperblockh) }), NULL, 1.0f);
+				RECT rect = { LONG(j * pixelsperblockw), LONG((renderingInput.physicsHeight - i) * pixelsperblockh), LONG((j + 1) * pixelsperblockw), LONG((renderingInput.physicsHeight - (i + 1)) * pixelsperblockh) };
+				DrawBitmap(bitmaps[4], &rect, NULL, 1.0f);
+			}
+			if (renderingInput.physics[i*renderingInput.physicsWidth + j].type == BARRIER)
+			{
+				RECT rect = { LONG(j * pixelsperblockw), LONG((renderingInput.physicsHeight - i) * pixelsperblockh), LONG((j + 1) * pixelsperblockw), LONG((renderingInput.physicsHeight - (i + 1)) * pixelsperblockh) };
+				DrawBitmap(bitmaps[38], &rect, NULL, 1.0f);
 			}
 		}
 	}
