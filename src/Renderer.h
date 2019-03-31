@@ -15,6 +15,7 @@
 
 enum RendererErrors
 {
+	NoErrors,
 	LoadingBitmapError,
 	HWNDRenderTargetCreationError,
 	D2D1FactoryCreationError
@@ -35,8 +36,8 @@ private:
 
 	D2D1::ColorF backgroundColor = { 0.8f, 0.5f, 0.5f };
 
-	void BeginDraw() { rendertarget->BeginDraw(); }
-	void EndDraw() { rendertarget->EndDraw(); }
+	void BeginDraw();
+	void EndDraw();
 	void ClearScreen();
 	bool LoadID2D1Bitmap(LPCWSTR filename, ID2D1Bitmap **ppBitmap);
 	void DrawBitmap(ID2D1Bitmap* bmp, RECT* rect, RECT* srcrect, float opacity);
@@ -46,10 +47,10 @@ public:
 	Renderer(HINSTANCE hInstance, LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam), int nCmdShow);
 	~Renderer();
 	void RenderFrame(FrameRenderingInput renderingInput);
-	HWND GetWindowHandle() { return windowHandle; }
+	HWND GetWindowHandle();
 
 	D2D1_SIZE_U GetRenderTargetSize();
 
-	RendererErrors GetLastRendererError();
+	RendererErrors GetError();
 
 };

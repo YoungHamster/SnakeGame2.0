@@ -29,13 +29,31 @@ GamePlayEngine::~GamePlayEngine()
 	snakes.clear();
 }
 
-void GamePlayEngine::ChangeObject(int x, int y, int texture, int type) { physics[y*physw + x].texture = texture; physics[y*physw + x].type = type; }
+void GamePlayEngine::ChangeObject(int x, int y, int texture, int type) 
+{
+	if (x < 0 || x > physw || y < 0 || y > physh)
+	{
+		return;
+	}
+	physics[y*physw + x].texture = texture;
+	physics[y*physw + x].type = type;
+}
 
-int GamePlayEngine::GetObjType(int x, int y) { return physics[y*physw + x].type; }
+int GamePlayEngine::GetObjType(int x, int y)
+{ 
+	if (x < 0 || x > physw || y < 0 || y > physh)
+	{
+		return -1;
+	}
+	return physics[y*physw + x].type;
+}
 
 int GamePlayEngine::SpawnSnake(int size, int headx, int heady, char headdir)
 {
-	// TODO params verification
+	if (headx < 0 || headx > physw || heady < 0 || heady > physh || (headdir != UP && headdir != DOWN && headdir != LEFT && headdir != RIGHT))
+	{
+		return -1;
+	}
 	snakes.push_back(Snake());
 	number_of_snakes += 1;
 	snakes.at(number_of_snakes - 1).snake.resize(size);
@@ -57,7 +75,10 @@ int GamePlayEngine::SpawnSnake(int size, int headx, int heady, char headdir)
 
 void GamePlayEngine::DespawnSnake(int snake_id)
 {
-	// TODO params verification
+	if (snake_id < 0 || snake_id > number_of_snakes)
+	{
+		return;
+	}
 	for (int i = 0; i < snakes[snake_id].snake.size(); i++)
 	{
 		ChangeObject(snakes[snake_id].snake[i].x, snakes[snake_id].snake[i].y, 1, 0);
@@ -68,7 +89,10 @@ void GamePlayEngine::DespawnSnake(int snake_id)
 
 void GamePlayEngine::FeedSnake(int snake_id)
 {
-	// TODO params verification
+	if (snake_id < 0 || snake_id > number_of_snakes)
+	{
+		return;
+	}
 	SnakeBlock sb;
 	sb.dir = snakes.at(snake_id).snake[snakes.at(snake_id).snake.size() - 1].dir;
 	sb.x = snakes.at(snake_id).snake[snakes.at(snake_id).snake.size() - 1].x;
@@ -125,15 +149,70 @@ void GamePlayEngine::MoveSnakes()
 			}
 		}
 	}
+
+	// This this code checks if snakes collide with any other snakes and their own bodies
+	std::vector<SnakeBlock> allSnakeBlocksWithoutHeads; // sorry for long name
+	std::vector<SnakeBlock> snakesHeads;
+	snakesHeads.resize(snakes.size());
+	for (int i = 0; i < snakes.size(); i++)
+	{
+		snakesHeads[i] = snakes[i].snake[0];
+		int prevSize = allSnakeBlocksWithoutHeads.size();
+		allSnakeBlocksWithoutHeads.resize(allSnakeBlocksWithoutHeads.size() + snakes[i].snake.size() - 1);
+		for (int j = 1; j < snakes[i].snake.size(); j++)
+		{
+			allSnakeBlocksWithoutHeads[prevSize + j - 1] = snakes[i].snake[j];
+		}
+	}
+	for (int i = 0; i < snakes.size(); i++)
+	{
+		for (int j = 0; j < snakes.size(); j++)
+		{
+			// if i == j it means, that we try to compare snake's head with itself
+			if (i != j && snakes[i].snake.size() > 0)
+			{
+				if (snakes[i].snake[0].x == snakesHeads[j].x && snakes[i].snake[0].y == snakesHeads[j].y)
+				{
+					snakes[i].snake.clear(); // clear snake instead of Despawning it to keep this algorithm easy
+				}
+			}
+		}
+		for (int j = 0; j < allSnakeBlocksWithoutHeads.size(); j++)
+		{
+			if (snakes[i].snake.size() > 0)
+			{
+				if (snakes[i].snake[0].x == allSnakeBlocksWithoutHeads[j].x && snakes[i].snake[0].y == allSnakeBlocksWithoutHeads[j].y)
+				{
+					snakes[i].snake.clear();
+				}
+			}
+		}
+	}
+	
+	for (int i = 0; i < snakes.size(); i++)
+	{
+		if (snakes[i].snake.size() == 0)
+		{
+			DespawnSnake(i);
+		}
+	}
 }
 
 void GamePlayEngine::ChangeSnakeDirection(int snake_id, char dir)
 {
-	// TODO params verification
+	if (snake_id < 0 || snake_id > number_of_snakes || (dir != UP && dir != DOWN && dir != LEFT && dir != RIGHT))
+	{
+		return;
+	}
 	snakes.at(snake_id).snake[0].dir = dir;
 }
 
 FrameRenderingInput GamePlayEngine::GetFrameRenderingInput()
 {
 	return { physics, physw, physh, &snakes };
+}
+
+int GamePlayEngine::GetNumberOfSnakes()
+{
+	return number_of_snakes;
 }

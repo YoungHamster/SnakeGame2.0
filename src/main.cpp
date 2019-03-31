@@ -17,6 +17,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR cmd, in
 	MSG msg;
 	msg.message = WM_NULL;
 
+	gamePlayEngine.SpawnSnake(3, 10, 1, LEFT);
+	gamePlayEngine.SpawnSnake(3, 8, 1, RIGHT);
+
 	int newSnakey = 1;
 	while (programRunning)
 	{
@@ -34,7 +37,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR cmd, in
 					gamePlayEngine.MoveSnakes();
 					break;
 				case VK_F1:
-					gamePlayEngine.SpawnSnake(3, 10, newSnakey, LEFT);
+					gamePlayEngine.SpawnSnake(3, 10, (newSnakey % 16) + 1, LEFT);
 					newSnakey += 1;
 					break;
 				}

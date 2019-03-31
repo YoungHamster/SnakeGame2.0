@@ -132,6 +132,10 @@ Renderer::~Renderer()
 	rendertarget->Release();
 }
 
+void Renderer::BeginDraw() { rendertarget->BeginDraw(); }
+
+void Renderer::EndDraw() { rendertarget->EndDraw(); }
+
 void Renderer::RenderFrame(FrameRenderingInput renderingInput)
 {
 	BeginDraw();
@@ -179,11 +183,18 @@ void Renderer::RenderFrame(FrameRenderingInput renderingInput)
 				}
 			}
 			DrawBitmap(bitmaps[bitmapId], &rect, NULL, 0.75f);
+			rect.left -= pixelsperblockw * 2;
+			rect.top -= pixelsperblockh * 2;
+			rect.right += pixelsperblockw * 2;
+			rect.bottom += pixelsperblockh * 2;
+			DrawBitmap(bitmaps[80], &rect, NULL, 0.1f);
 		}
 	}
 
 	EndDraw();
 }
+
+HWND Renderer::GetWindowHandle() { return windowHandle; }
 
 void Renderer::DrawBitmap(ID2D1Bitmap* bmp, RECT* rect, RECT* srcrect, float opacity)
 {
@@ -300,7 +311,16 @@ bool Renderer::LoadID2D1Bitmap(LPCWSTR filename, ID2D1Bitmap **ppBitmap)
 	return true;
 }
 
-RendererErrors Renderer::GetLastRendererError()
+RendererErrors Renderer::GetError()
 {
-	return rendererErrors[rendererErrors.back()];
+	if (rendererErrors.size() == 0)
+	{
+		return NoErrors;
+	}
+	else
+	{
+		RendererErrors error = rendererErrors[0];
+		rendererErrors.erase(rendererErrors.begin());
+		return error;
+	}
 }

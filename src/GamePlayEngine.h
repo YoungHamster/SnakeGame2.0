@@ -23,4 +23,5 @@ public:
 	void MoveSnakes();
 	void ChangeSnakeDirection(int snake_id, char dir);
 	FrameRenderingInput GetFrameRenderingInput();
+	int GetNumberOfSnakes();
 };
