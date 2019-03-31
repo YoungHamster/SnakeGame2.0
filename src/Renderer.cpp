@@ -163,14 +163,14 @@ void Renderer::RenderFrame(FrameRenderingInput renderingInput)
 	{
 		for (int j = 0; j < renderingInput.snakes->at(i).snake.size(); j++)
 		{
+			bitmapId = i % 4 * 9;
 			RECT rect = { LONG(renderingInput.snakes->at(i).snake[j].x * pixelsperblockw), LONG((renderingInput.physicsHeight - renderingInput.snakes->at(i).snake[j].y) * pixelsperblockh), LONG((renderingInput.snakes->at(i).snake[j].x + 1) * pixelsperblockw), LONG((renderingInput.physicsHeight - (renderingInput.snakes->at(i).snake[j].y + 1)) * pixelsperblockh) };
 			if (j != 0 && j != renderingInput.snakes->at(i).snake.size() - 1)
 			{
-				bitmapId = 4 + i % 4 * 9;
+				bitmapId += 4;
 			}
 			else
 			{
-				bitmapId = i % 4 * 9;
 				switch (renderingInput.snakes->at(i).snake[j].dir)
 				{
 				case DOWN: bitmapId += 1; break;
@@ -190,7 +190,6 @@ void Renderer::RenderFrame(FrameRenderingInput renderingInput)
 			DrawBitmap(bitmaps[80], &rect, NULL, 0.1f);
 		}
 	}
-
 	EndDraw();
 }
 

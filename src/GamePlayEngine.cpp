@@ -7,19 +7,19 @@ GamePlayEngine::GamePlayEngine(int physw, int physh)
 	physics = new PhysicalObject[physw*physh];
 	for (int i = 0; i < physw; i++)
 	{
-		ChangeObject(i, 0, 1, BARRIER);
+		ChangeObject(i, 0, BARRIER);
 	}
 	for (int i = 0; i < physw; i++)
 	{
-		ChangeObject(i, physh - 1, 1, BARRIER);
+		ChangeObject(i, physh - 1, BARRIER);
 	}
 	for (int i = 1; i < physh; i++)
 	{
-		ChangeObject(0, i, 1, BARRIER);
+		ChangeObject(0, i, BARRIER);
 	}
 	for (int i = 1; i < physh; i++)
 	{
-		ChangeObject(physw - 1, i, 1, BARRIER);
+		ChangeObject(physw - 1, i, BARRIER);
 	}
 }
 
@@ -29,13 +29,12 @@ GamePlayEngine::~GamePlayEngine()
 	snakes.clear();
 }
 
-void GamePlayEngine::ChangeObject(int x, int y, int texture, int type) 
+void GamePlayEngine::ChangeObject(int x, int y, int type) 
 {
 	if (x < 0 || x > physw || y < 0 || y > physh)
 	{
 		return;
 	}
-	physics[y*physw + x].texture = texture;
 	physics[y*physw + x].type = type;
 }
 
@@ -57,6 +56,7 @@ int GamePlayEngine::SpawnSnake(int size, int headx, int heady, char headdir)
 	snakes.push_back(Snake());
 	number_of_snakes += 1;
 	snakes.at(number_of_snakes - 1).snake.resize(size);
+	snakes.at(number_of_snakes - 1).newdir = headdir;
 	SnakeBlock sb = { headx, heady, headdir };
 	for (int i = 0; i < size; i++)
 	{
@@ -68,9 +68,18 @@ int GamePlayEngine::SpawnSnake(int size, int headx, int heady, char headdir)
 		case RIGHT: sb.x = headx - i; break;
 		}
 		snakes.at(number_of_snakes - 1).snake[i] = sb;
-		ChangeObject(sb.x, sb.y, 1/*TODO*/, SNAKE);
+		ChangeObject(sb.x, sb.y, SNAKE);
 	}
 	return number_of_snakes - 1;
+}
+
+void GamePlayEngine::SpawnApple(int x, int y)
+{
+	if (x < 0 || x > physw || y < 0 || y > physh || GetObjType(x, y) != 0)
+	{
+		return;
+	}
+	ChangeObject(x, y, APPLE);
 }
 
 void GamePlayEngine::DespawnSnake(int snake_id)
@@ -81,7 +90,7 @@ void GamePlayEngine::DespawnSnake(int snake_id)
 	}
 	for (int i = 0; i < snakes[snake_id].snake.size(); i++)
 	{
-		ChangeObject(snakes[snake_id].snake[i].x, snakes[snake_id].snake[i].y, 1, 0);
+		ChangeObject(snakes[snake_id].snake[i].x, snakes[snake_id].snake[i].y, 0);
 	}
 	snakes.erase(snakes.begin() + snake_id);
 	number_of_snakes -= 1;
@@ -104,7 +113,7 @@ void GamePlayEngine::FeedSnake(int snake_id)
 	case LEFT: sb.x += 1; break;
 	case RIGHT: sb.x -= 1; break;
 	}
-	ChangeObject(sb.x, sb.y, 1/*TODO*/, SNAKE);
+	ChangeObject(sb.x, sb.y, SNAKE);
 	snakes.at(snake_id).snake.push_back(sb);
 }
 
@@ -115,10 +124,21 @@ void GamePlayEngine::ShortenSnake(int snake_id)
 
 void GamePlayEngine::MoveSnakes()
 {
+	// delete all empty snakes
+	for (int i = 0; i < snakes.size(); i++)
+	{
+		if (snakes[i].snake.size() == 0)
+		{
+			DespawnSnake(i);
+			i -= 1;
+		}
+	}
+
 	for (int i = 0; i < snakes.size(); i++)
 	{
 		int x = snakes.at(i).snake[0].x;
 		int y = snakes.at(i).snake[0].y;
+		snakes[i].snake[0].dir = snakes[i].newdir;
 		switch (snakes.at(i).snake[0].dir)
 		{
 		case UP: y += 1;  break;
@@ -131,8 +151,8 @@ void GamePlayEngine::MoveSnakes()
 		case BARRIER: DespawnSnake(i); i -= 1; continue; break;
 		case APPLE: FeedSnake(i); break;
 		}
-		ChangeObject(snakes.at(i).snake[snakes.at(i).snake.size() - 1].x, snakes.at(i).snake[snakes.at(i).snake.size() - 1].y, 1/*TODO*/, 0);
-		ChangeObject(x, y, 1/*TODO*/, SNAKE);
+		ChangeObject(snakes.at(i).snake[snakes.at(i).snake.size() - 1].x, snakes.at(i).snake[snakes.at(i).snake.size() - 1].y, 0);
+		ChangeObject(x, y, SNAKE);
 		for (int j = 0; j < snakes.at(i).snake.size(); j++)
 		{
 			int id = snakes.at(i).snake.size() - j - 1;
@@ -188,14 +208,6 @@ void GamePlayEngine::MoveSnakes()
 			}
 		}
 	}
-	
-	for (int i = 0; i < snakes.size(); i++)
-	{
-		if (snakes[i].snake.size() == 0)
-		{
-			DespawnSnake(i);
-		}
-	}
 }
 
 void GamePlayEngine::ChangeSnakeDirection(int snake_id, char dir)
@@ -204,7 +216,12 @@ void GamePlayEngine::ChangeSnakeDirection(int snake_id, char dir)
 	{
 		return;
 	}
-	snakes.at(snake_id).snake[0].dir = dir;
+	if ((snakes[snake_id].snake[0].dir == UP && dir == DOWN) || (snakes[snake_id].snake[0].dir == DOWN && dir == UP) || 
+		(snakes[snake_id].snake[0].dir == LEFT && dir == RIGHT) || (snakes[snake_id].snake[0].dir == RIGHT && dir == LEFT))
+	{
+		return;
+	}
+	snakes.at(snake_id).newdir = dir;
 }
 
 FrameRenderingInput GamePlayEngine::GetFrameRenderingInput()

@@ -14,7 +14,6 @@
 
 struct PhysicalObject
 {
-	int texture = 0;
 	int type = 0;
 };
 
@@ -23,9 +22,11 @@ struct SnakeBlock
 	int x;
 	int y;
 	char dir;
+	int texture;
 };
 
 struct Snake
 {
+	char newdir;
 	std::vector<SnakeBlock> snake;
 };

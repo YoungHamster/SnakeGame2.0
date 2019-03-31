@@ -14,9 +14,10 @@ private:
 public:
 	GamePlayEngine(int physw, int physh);
 	~GamePlayEngine();
-	void ChangeObject(int x, int y, int texture, int type);
+	void ChangeObject(int x, int y, int type);
 	int GetObjType(int x, int y);
 	int SpawnSnake(int size, int headx, int heady, char headdir);
+	void SpawnApple(int x, int y);
 	void DespawnSnake(int snake_id);
 	void FeedSnake(int snake_id);
 	void ShortenSnake(int snake_id);
