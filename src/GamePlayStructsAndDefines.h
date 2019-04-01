@@ -22,11 +22,11 @@ struct SnakeBlock
 	int x;
 	int y;
 	char dir;
-	int texture;
 };
 
 struct Snake
 {
+	int texture = -1;
 	char newdir;
 	std::vector<SnakeBlock> snake;
 };

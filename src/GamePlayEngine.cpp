@@ -155,7 +155,7 @@ void GamePlayEngine::MoveSnakes()
 		ChangeObject(x, y, SNAKE);
 		for (int j = 0; j < snakes.at(i).snake.size(); j++)
 		{
-			int id = snakes.at(i).snake.size() - j - 1;
+			int id = (int)snakes.at(i).snake.size() - j - 1;
 			switch (snakes.at(i).snake[id].dir)
 			{
 			case UP: snakes.at(i).snake[id].y += 1; break;
@@ -177,7 +177,7 @@ void GamePlayEngine::MoveSnakes()
 	for (int i = 0; i < snakes.size(); i++)
 	{
 		snakesHeads[i] = snakes[i].snake[0];
-		int prevSize = allSnakeBlocksWithoutHeads.size();
+		int prevSize = (int)allSnakeBlocksWithoutHeads.size();
 		allSnakeBlocksWithoutHeads.resize(allSnakeBlocksWithoutHeads.size() + snakes[i].snake.size() - 1);
 		for (int j = 1; j < snakes[i].snake.size(); j++)
 		{
@@ -212,7 +212,7 @@ void GamePlayEngine::MoveSnakes()
 
 void GamePlayEngine::ChangeSnakeDirection(int snake_id, char dir)
 {
-	if (snake_id < 0 || snake_id > number_of_snakes || (dir != UP && dir != DOWN && dir != LEFT && dir != RIGHT))
+	if (snake_id < 0 || snake_id >= number_of_snakes || (dir != UP && dir != DOWN && dir != LEFT && dir != RIGHT))
 	{
 		return;
 	}

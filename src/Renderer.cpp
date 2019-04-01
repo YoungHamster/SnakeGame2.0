@@ -140,31 +140,52 @@ void Renderer::RenderFrame(FrameRenderingInput renderingInput)
 {
 	BeginDraw();
 	ClearScreen();
-	float pixelsperblockw = (float)rendertarget->GetPixelSize().width / (float)renderingInput.physicsWidth;
-	float pixelsperblockh = (float)rendertarget->GetPixelSize().height / (float)renderingInput.physicsHeight;
+
+	float pixelsperblockw = 30.0f;//(float)rendertarget->GetPixelSize().width / (float)renderingInput.physicsWidth;
+	float pixelsperblockh = 30.0f;//(float)rendertarget->GetPixelSize().height / (float)renderingInput.physicsHeight;
+	RECT rect;
 	for (int i = 0; i < renderingInput.physicsHeight; i++)
 	{
 		for (int j = 0; j < renderingInput.physicsWidth; j++)
 		{
-			if (renderingInput.physics[i*renderingInput.physicsWidth + j].type == APPLE)
+			if (renderingInput.physics[i*renderingInput.physicsWidth + j].type == APPLE ||
+				renderingInput.physics[i*renderingInput.physicsWidth + j].type == BARRIER)
 			{
-				RECT rect = { LONG(j * pixelsperblockw), LONG((renderingInput.physicsHeight - i) * pixelsperblockh), LONG((j + 1) * pixelsperblockw), LONG((renderingInput.physicsHeight - (i + 1)) * pixelsperblockh) };
-				DrawBitmap(bitmaps[37], &rect, NULL, 1.0f); // 37 is apple texture
-			}
-			if (renderingInput.physics[i*renderingInput.physicsWidth + j].type == BARRIER)
-			{
-				RECT rect = { LONG(j * pixelsperblockw), LONG((renderingInput.physicsHeight - i) * pixelsperblockh), LONG((j + 1) * pixelsperblockw), LONG((renderingInput.physicsHeight - (i + 1)) * pixelsperblockh) };
-				DrawBitmap(bitmaps[38], &rect, NULL, 1.0f); // 38 is barrier texture
+				rect = { LONG(j * pixelsperblockw),
+					LONG((renderingInput.physicsHeight - i) * pixelsperblockh),
+					LONG((j + 1) * pixelsperblockw),
+					LONG((renderingInput.physicsHeight - (i + 1)) * pixelsperblockh) };
+				switch (renderingInput.physics[i*renderingInput.physicsWidth + j].type)
+				{
+				case APPLE: 
+					DrawBitmap(bitmaps[37], &rect, NULL, 1.0f); // 37 is apple texture
+					break;
+				case BARRIER:
+					DrawBitmap(bitmaps[38], &rect, NULL, 1.0f); // 38 is barrier texture
+					break;
+				}
 			}
 		}
 	}
+
 	int bitmapId = 0;
 	for (int i = 0; i < renderingInput.snakes->size(); i++)
 	{
 		for (int j = 0; j < renderingInput.snakes->at(i).snake.size(); j++)
 		{
-			bitmapId = i % 4 * 9;
-			RECT rect = { LONG(renderingInput.snakes->at(i).snake[j].x * pixelsperblockw), LONG((renderingInput.physicsHeight - renderingInput.snakes->at(i).snake[j].y) * pixelsperblockh), LONG((renderingInput.snakes->at(i).snake[j].x + 1) * pixelsperblockw), LONG((renderingInput.physicsHeight - (renderingInput.snakes->at(i).snake[j].y + 1)) * pixelsperblockh) };
+			rect = { LONG(renderingInput.snakes->at(i).snake[j].x * pixelsperblockw),
+				LONG((renderingInput.physicsHeight - renderingInput.snakes->at(i).snake[j].y) * pixelsperblockh),
+				LONG((renderingInput.snakes->at(i).snake[j].x + 1) * pixelsperblockw),
+				LONG((renderingInput.physicsHeight - (renderingInput.snakes->at(i).snake[j].y + 1)) * pixelsperblockh) };
+			if (renderingInput.snakes->at(i).texture == -1)
+			{
+				bitmapId = i % 4 * 9;
+				renderingInput.snakes->at(i).texture = bitmapId;
+			}
+			else
+			{
+				bitmapId = renderingInput.snakes->at(i).texture;
+			}
 			if (j != 0 && j != renderingInput.snakes->at(i).snake.size() - 1)
 			{
 				bitmapId += 4;
@@ -183,13 +204,32 @@ void Renderer::RenderFrame(FrameRenderingInput renderingInput)
 				}
 			}
 			DrawBitmap(bitmaps[bitmapId], &rect, NULL, 0.75f);
-			rect.left -= pixelsperblockw * 2;
-			rect.top -= pixelsperblockh * 2;
-			rect.right += pixelsperblockw * 2;
-			rect.bottom += pixelsperblockh * 2;
+
+			// glowing effect for snakes
+			rect.left -= LONG(pixelsperblockw * 2);
+			rect.top -= LONG(pixelsperblockh * 2);
+			rect.right += LONG(pixelsperblockw * 2);
+			rect.bottom += LONG(pixelsperblockh * 2);
 			DrawBitmap(bitmaps[80], &rect, NULL, 0.1f);
 		}
 	}
+	// transforming frame so head of player's snake appers in the middle of the window
+	if (renderingInput.snakes->size() > 0 && renderingInput.snakes->at(0).snake.size() > 0)
+	{
+		rect = { LONG(renderingInput.snakes->at(0).snake[0].x * pixelsperblockw),
+					LONG((renderingInput.physicsHeight - renderingInput.snakes->at(0).snake[0].y) * pixelsperblockh),
+					LONG((renderingInput.snakes->at(0).snake[0].x + 1) * pixelsperblockw),
+					LONG((renderingInput.physicsHeight - (renderingInput.snakes->at(0).snake[0].y + 1)) * pixelsperblockh) };
+		rendertarget->SetTransform(D2D1::Matrix3x2F::Translation((rendertarget->GetPixelSize().width - rect.left - rect.right) / 2,
+			(rendertarget->GetPixelSize().height - rect.bottom - rect.top) / 2));
+	}
+	// if there is no snakes renderer centers by borders of gamefield
+	else
+	{
+		rendertarget->SetTransform(D2D1::Matrix3x2F::Translation((rendertarget->GetPixelSize().width - UINT32(renderingInput.physicsWidth * pixelsperblockw)) / 2,
+			(rendertarget->GetPixelSize().height - UINT32(renderingInput.physicsHeight * pixelsperblockh)) / 2));
+	}
+
 	EndDraw();
 }
 

@@ -12,10 +12,13 @@
 auto starttime = std::chrono::high_resolution_clock::now();\
  x;\
 auto endtime = std::chrono::high_resolution_clock::now();\
-AllocConsole();\
-HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);\
-std::string delta(std::to_string(__LINE__) + ' ' + std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(endtime - starttime).count()) + " mcs\n");\
-WriteConsole(out, delta.c_str(), delta.size(), NULL, NULL)
+if(std::chrono::duration_cast<std::chrono::milliseconds>(endtime - starttime).count() > 0)\
+{\
+	AllocConsole(); \
+	HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE); \
+	std::string delta(std::to_string(__LINE__) + ' ' + std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(endtime - starttime).count()) + " ms\n"); \
+	WriteConsole(out, delta.c_str(), delta.size(), NULL, NULL);\
+}
 
 static bool programRunning = true;
 
@@ -48,7 +51,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR cmd, in
 		{
 			if (gamePlayEngine.GetNumberOfSnakes() == 0)
 			{
-				gamePlayEngine.SpawnSnake(3, 32 / 2 - 2, 18 / 2, LEFT);
+				//gamePlayEngine.SpawnSnake(3, 32 / 2 - 2, 18 / 2, LEFT);
 			}
 			if (inputBuffer.size() > 0)
 			{
