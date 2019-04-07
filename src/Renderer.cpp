@@ -1,6 +1,7 @@
 #include "Renderer.h"
 
 Renderer::Renderer(HINSTANCE hInstance, LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam), int nCmdShow)
+	:renderingInputHistory(sizeof(FrameRenderingInput), 6), translationHistory(sizeof(D2D1::Matrix3x2F), 2)
 {
 	/* Win api initialization */
 	WNDCLASSEX windowclass;
@@ -15,11 +16,9 @@ Renderer::Renderer(HINSTANCE hInstance, LRESULT CALLBACK WindowProc(HWND hwnd, U
 	RECT rect = { 0, 0, SCREENWIDTH, SCREENHEIGTH };
 	AdjustWindowRectEx(&rect, WS_OVERLAPPEDWINDOW, false, WS_EX_OVERLAPPEDWINDOW);
 
-	HWND windowHandle = CreateWindowW(L"MainWindow", L"SnakeGame", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
+	windowHandle = CreateWindowW(L"MainWindow", L"SnakeGame", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
 		rect.right - rect.left, rect.bottom - rect.top, NULL, NULL, hInstance, 0);
 	if (!windowHandle) return;
-
-	this->windowHandle = windowHandle;
 
 	ShowWindow(windowHandle, nCmdShow);
 
@@ -144,6 +143,23 @@ void Renderer::RenderFrame(FrameRenderingInput renderingInput)
 	float pixelsperblockw = 30.0f;//(float)rendertarget->GetPixelSize().width / (float)renderingInput.physicsWidth;
 	float pixelsperblockh = 30.0f;//(float)rendertarget->GetPixelSize().height / (float)renderingInput.physicsHeight;
 	RECT rect;
+	// transforming frame so head of player's snake appers in the middle of the window
+	if (renderingInput.snakes->size() > 0 && renderingInput.snakes->at(0).snake.size() > 0)
+	{
+		rect = { LONG(renderingInput.snakes->at(0).snake[0].x * pixelsperblockw),
+					LONG((renderingInput.physicsHeight - renderingInput.snakes->at(0).snake[0].y) * pixelsperblockh),
+					LONG((renderingInput.snakes->at(0).snake[0].x + 1) * pixelsperblockw),
+					LONG((renderingInput.physicsHeight - (renderingInput.snakes->at(0).snake[0].y + 1)) * pixelsperblockh) };
+		rendertarget->SetTransform(D2D1::Matrix3x2F::Translation((rendertarget->GetPixelSize().width - (rect.left + rect.right)) / 2,
+			(rendertarget->GetPixelSize().height - (rect.bottom + rect.top)) / 2));
+	}
+	// if there is no snakes renderer centers by borders of gamefield
+	else
+	{
+		rendertarget->SetTransform(D2D1::Matrix3x2F::Translation((rendertarget->GetPixelSize().width - UINT32(renderingInput.physicsWidth * pixelsperblockw)) / 2,
+			(rendertarget->GetPixelSize().height - UINT32(renderingInput.physicsHeight * pixelsperblockh)) / 2));
+	}
+	
 	for (int i = 0; i < renderingInput.physicsHeight; i++)
 	{
 		for (int j = 0; j < renderingInput.physicsWidth; j++)
@@ -213,24 +229,8 @@ void Renderer::RenderFrame(FrameRenderingInput renderingInput)
 			DrawBitmap(bitmaps[80], &rect, NULL, 0.1f);
 		}
 	}
-	// transforming frame so head of player's snake appers in the middle of the window
-	if (renderingInput.snakes->size() > 0 && renderingInput.snakes->at(0).snake.size() > 0)
-	{
-		rect = { LONG(renderingInput.snakes->at(0).snake[0].x * pixelsperblockw),
-					LONG((renderingInput.physicsHeight - renderingInput.snakes->at(0).snake[0].y) * pixelsperblockh),
-					LONG((renderingInput.snakes->at(0).snake[0].x + 1) * pixelsperblockw),
-					LONG((renderingInput.physicsHeight - (renderingInput.snakes->at(0).snake[0].y + 1)) * pixelsperblockh) };
-		rendertarget->SetTransform(D2D1::Matrix3x2F::Translation((rendertarget->GetPixelSize().width - rect.left - rect.right) / 2,
-			(rendertarget->GetPixelSize().height - rect.bottom - rect.top) / 2));
-	}
-	// if there is no snakes renderer centers by borders of gamefield
-	else
-	{
-		rendertarget->SetTransform(D2D1::Matrix3x2F::Translation((rendertarget->GetPixelSize().width - UINT32(renderingInput.physicsWidth * pixelsperblockw)) / 2,
-			(rendertarget->GetPixelSize().height - UINT32(renderingInput.physicsHeight * pixelsperblockh)) / 2));
-	}
-
 	EndDraw();
+	*(FrameRenderingInput*)renderingInputHistory.GetNextElement() = renderingInput;
 }
 
 HWND Renderer::GetWindowHandle() { return windowHandle; }

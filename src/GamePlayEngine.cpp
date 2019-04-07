@@ -1,9 +1,8 @@
 #include "GamePlayEngine.h"
 
 GamePlayEngine::GamePlayEngine(int physw, int physh)
+	:physw(physw), physh(physh)
 {
-	this->physw = physw;
-	this->physh = physh;
 	physics = new PhysicalObject[physw*physh];
 	for (int i = 0; i < physw; i++)
 	{
@@ -31,7 +30,7 @@ GamePlayEngine::~GamePlayEngine()
 
 void GamePlayEngine::ChangeObject(int x, int y, int type) 
 {
-	if (x < 0 || x > physw || y < 0 || y > physh)
+	if (x < 0 || y < 0 || x > physw || y > physh)
 	{
 		return;
 	}
@@ -39,8 +38,8 @@ void GamePlayEngine::ChangeObject(int x, int y, int type)
 }
 
 int GamePlayEngine::GetObjType(int x, int y)
-{ 
-	if (x < 0 || x > physw || y < 0 || y > physh)
+{
+	if (x < 0 || y < 0 || x > physw || y > physh)
 	{
 		return -1;
 	}
@@ -49,10 +48,6 @@ int GamePlayEngine::GetObjType(int x, int y)
 
 int GamePlayEngine::SpawnSnake(int size, int headx, int heady, char headdir)
 {
-	if (headx < 0 || headx > physw || heady < 0 || heady > physh || (headdir != UP && headdir != DOWN && headdir != LEFT && headdir != RIGHT))
-	{
-		return -1;
-	}
 	snakes.push_back(Snake());
 	number_of_snakes += 1;
 	snakes.at(number_of_snakes - 1).snake.resize(size);
@@ -75,7 +70,7 @@ int GamePlayEngine::SpawnSnake(int size, int headx, int heady, char headdir)
 
 void GamePlayEngine::SpawnApple(int x, int y)
 {
-	if (x < 0 || x > physw || y < 0 || y > physh || GetObjType(x, y) != 0)
+	if (GetObjType(x, y) != 0)
 	{
 		return;
 	}
@@ -84,7 +79,7 @@ void GamePlayEngine::SpawnApple(int x, int y)
 
 void GamePlayEngine::DespawnSnake(int snake_id)
 {
-	if (snake_id < 0 || snake_id > number_of_snakes)
+	if (number_of_snakes == 0 || snake_id > number_of_snakes)
 	{
 		return;
 	}
@@ -98,14 +93,11 @@ void GamePlayEngine::DespawnSnake(int snake_id)
 
 void GamePlayEngine::FeedSnake(int snake_id)
 {
-	if (snake_id < 0 || snake_id > number_of_snakes)
+	if (number_of_snakes == 0 || snake_id > number_of_snakes)
 	{
 		return;
 	}
-	SnakeBlock sb;
-	sb.dir = snakes.at(snake_id).snake[snakes.at(snake_id).snake.size() - 1].dir;
-	sb.x = snakes.at(snake_id).snake[snakes.at(snake_id).snake.size() - 1].x;
-	sb.y = snakes.at(snake_id).snake[snakes.at(snake_id).snake.size() - 1].y;
+	SnakeBlock sb = snakes.at(snake_id).snake[snakes.at(snake_id).snake.size() - 1];
 	switch (sb.dir)
 	{
 	case UP: sb.y -= 1; break;
@@ -119,6 +111,10 @@ void GamePlayEngine::FeedSnake(int snake_id)
 
 void GamePlayEngine::ShortenSnake(int snake_id)
 {
+	if (number_of_snakes == 0 || snake_id > number_of_snakes)
+	{
+		return;
+	}
 	// TODO
 }
 
@@ -212,7 +208,7 @@ void GamePlayEngine::MoveSnakes()
 
 void GamePlayEngine::ChangeSnakeDirection(int snake_id, char dir)
 {
-	if (snake_id < 0 || snake_id >= number_of_snakes || (dir != UP && dir != DOWN && dir != LEFT && dir != RIGHT))
+	if (number_of_snakes == 0 || snake_id > number_of_snakes)
 	{
 		return;
 	}

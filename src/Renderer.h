@@ -8,6 +8,7 @@
 
 #include "GamePlayStructsAndDefines.h"
 #include "FrameRenderingInput.h"
+#include "CyclicBuffer.h"
 
 #define BITMAPSNUMBER 81
 #define SCREENWIDTH 1280
@@ -25,16 +26,14 @@ class Renderer
 {
 private:
 	HWND windowHandle;
-
 	ID2D1Factory * factory;
 	ID2D1HwndRenderTarget* rendertarget;
-
 	// 39 GameTextures + 41 ASCII Symbols
 	ID2D1Bitmap* bitmaps[BITMAPSNUMBER];
-
 	std::vector<RendererErrors> rendererErrors;
-
 	D2D1::ColorF backgroundColor = { 0.8f, 0.5f, 0.5f };
+	CyclicBuffer renderingInputHistory;
+	CyclicBuffer translationHistory;
 
 	void BeginDraw();
 	void EndDraw();
@@ -48,9 +47,6 @@ public:
 	~Renderer();
 	void RenderFrame(FrameRenderingInput renderingInput);
 	HWND GetWindowHandle();
-
-	D2D1_SIZE_U GetRenderTargetSize();
-
 	RendererErrors GetError();
 
 };
