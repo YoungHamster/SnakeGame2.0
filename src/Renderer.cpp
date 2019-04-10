@@ -137,28 +137,12 @@ void Renderer::EndDraw() { rendertarget->EndDraw(); }
 
 void Renderer::RenderFrame(FrameRenderingInput renderingInput)
 {
+	*(FrameRenderingInput*)renderingInputHistory.GetNextElement() = renderingInput;
+	float pixelsperblockw = (float)rendertarget->GetPixelSize().width / (float)renderingInput.physicsWidth;
+	float pixelsperblockh = (float)rendertarget->GetPixelSize().height / (float)renderingInput.physicsHeight;
 	BeginDraw();
 	ClearScreen();
-
-	float pixelsperblockw = 30.0f;//(float)rendertarget->GetPixelSize().width / (float)renderingInput.physicsWidth;
-	float pixelsperblockh = 30.0f;//(float)rendertarget->GetPixelSize().height / (float)renderingInput.physicsHeight;
 	RECT rect;
-	// transforming frame so head of player's snake appers in the middle of the window
-	if (renderingInput.snakes->size() > 0 && renderingInput.snakes->at(0).snake.size() > 0)
-	{
-		rect = { LONG(renderingInput.snakes->at(0).snake[0].x * pixelsperblockw),
-					LONG((renderingInput.physicsHeight - renderingInput.snakes->at(0).snake[0].y) * pixelsperblockh),
-					LONG((renderingInput.snakes->at(0).snake[0].x + 1) * pixelsperblockw),
-					LONG((renderingInput.physicsHeight - (renderingInput.snakes->at(0).snake[0].y + 1)) * pixelsperblockh) };
-		rendertarget->SetTransform(D2D1::Matrix3x2F::Translation((rendertarget->GetPixelSize().width - (rect.left + rect.right)) / 2,
-			(rendertarget->GetPixelSize().height - (rect.bottom + rect.top)) / 2));
-	}
-	// if there is no snakes renderer centers by borders of gamefield
-	else
-	{
-		rendertarget->SetTransform(D2D1::Matrix3x2F::Translation((rendertarget->GetPixelSize().width - UINT32(renderingInput.physicsWidth * pixelsperblockw)) / 2,
-			(rendertarget->GetPixelSize().height - UINT32(renderingInput.physicsHeight * pixelsperblockh)) / 2));
-	}
 	
 	for (int i = 0; i < renderingInput.physicsHeight; i++)
 	{
@@ -230,7 +214,11 @@ void Renderer::RenderFrame(FrameRenderingInput renderingInput)
 		}
 	}
 	EndDraw();
-	*(FrameRenderingInput*)renderingInputHistory.GetNextElement() = renderingInput;
+}
+
+void Renderer::DragCamera(float x, float y)
+{
+	rendertarget->SetTransform(D2D1::Matrix3x2F::Translation(x, y));
 }
 
 HWND Renderer::GetWindowHandle() { return windowHandle; }

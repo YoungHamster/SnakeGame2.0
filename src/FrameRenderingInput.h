@@ -7,5 +7,5 @@ struct FrameRenderingInput
 	PhysicalObject *physics;
 	int physicsWidth;
 	int physicsHeight;
-	std::vector<Snake> *snakes;
+	std::vector<Snake> *snakes = nullptr;
 };

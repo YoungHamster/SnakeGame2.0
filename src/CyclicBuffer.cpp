@@ -4,6 +4,10 @@ CyclicBuffer::CyclicBuffer(size_t sizeOfOneElement, int numberOfElements)
 	:sizeOfOneElement(sizeOfOneElement), numberOfElements(numberOfElements)
 {
 	buffer = new char[sizeOfOneElement * numberOfElements];
+	for (int i = 0; i < sizeOfOneElement * numberOfElements; i++)
+	{
+		*((char*)buffer + i) = 0;
+	}
 }
 
 CyclicBuffer::~CyclicBuffer()
@@ -19,6 +23,7 @@ void * CyclicBuffer::GetNextElement()
 	if (currentElement == numberOfElements - 1)
 	{
 		currentElement = 0;
+		return buffer;
 	}
 	else
 	{
@@ -33,7 +38,7 @@ void * CyclicBuffer::GetElementByOffset(int offset)
 	int id = (currentElement + offset) % numberOfElements;
 	if (id < 0)
 	{
-		id = numberOfElements - id;
+		id = numberOfElements + id;
 	}
 	return (char*)buffer + id * sizeOfOneElement;
 }

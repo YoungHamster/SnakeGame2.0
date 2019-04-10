@@ -11,16 +11,17 @@ private:
 	PhysicalObject *physics;
 	int number_of_snakes;
 	std::vector<Snake> snakes;
-public:
-	GamePlayEngine(int physw, int physh);
-	~GamePlayEngine();
+
 	void ChangeObject(int x, int y, int type);
 	int GetObjType(int x, int y);
-	int SpawnSnake(int size, int headx, int heady, char headdir);
-	void SpawnApple(int x, int y);
 	void DespawnSnake(int snake_id);
 	void FeedSnake(int snake_id);
 	void ShortenSnake(int snake_id);
+public:
+	GamePlayEngine(int physw, int physh);
+	~GamePlayEngine();
+	int SpawnSnake(int size, int headx, int heady, char headdir);
+	void SpawnApple();
 	void MoveSnakes();
 	void ChangeSnakeDirection(int snake_id, char dir);
 	FrameRenderingInput GetFrameRenderingInput();

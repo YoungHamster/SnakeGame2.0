@@ -68,8 +68,10 @@ int GamePlayEngine::SpawnSnake(int size, int headx, int heady, char headdir)
 	return number_of_snakes - 1;
 }
 
-void GamePlayEngine::SpawnApple(int x, int y)
+void GamePlayEngine::SpawnApple()
 {
+	int x = rand() % physw + 1;
+	int y = rand() % physh + 1;
 	if (GetObjType(x, y) != 0)
 	{
 		return;
@@ -120,16 +122,6 @@ void GamePlayEngine::ShortenSnake(int snake_id)
 
 void GamePlayEngine::MoveSnakes()
 {
-	// delete all empty snakes
-	for (int i = 0; i < snakes.size(); i++)
-	{
-		if (snakes[i].snake.size() == 0)
-		{
-			DespawnSnake(i);
-			i -= 1;
-		}
-	}
-
 	for (int i = 0; i < snakes.size(); i++)
 	{
 		int x = snakes.at(i).snake[0].x;
@@ -202,6 +194,16 @@ void GamePlayEngine::MoveSnakes()
 					snakes[i].snake.clear();
 				}
 			}
+		}
+	}
+
+	// delete all empty snakes
+	for (int i = 0; i < snakes.size(); i++)
+	{
+		if (snakes[i].snake.size() == 0)
+		{
+			DespawnSnake(i);
+			i -= 1;
 		}
 	}
 }

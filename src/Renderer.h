@@ -22,6 +22,13 @@ enum RendererErrors
 	D2D1FactoryCreationError
 };
 
+struct Camera
+{
+	float x = 0.0f;
+	float y = 0.0f;
+	float scale = 0.0f;
+};
+
 class Renderer
 {
 private:
@@ -34,6 +41,7 @@ private:
 	D2D1::ColorF backgroundColor = { 0.8f, 0.5f, 0.5f };
 	CyclicBuffer renderingInputHistory;
 	CyclicBuffer translationHistory;
+	Camera camera;
 
 	void BeginDraw();
 	void EndDraw();
@@ -46,6 +54,7 @@ public:
 	Renderer(HINSTANCE hInstance, LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam), int nCmdShow);
 	~Renderer();
 	void RenderFrame(FrameRenderingInput renderingInput);
+	void DragCamera(float deltax, float deltay);
 	HWND GetWindowHandle();
 	RendererErrors GetError();
 

@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include <Windowsx.h>
 #include <chrono>
 
 #include "Renderer.h"
@@ -20,8 +21,16 @@ if(std::chrono::duration_cast<std::chrono::milliseconds>(endtime - starttime).co
 	WriteConsole(out, delta.c_str(), delta.size(), NULL, NULL);\
 }
 
+struct MouseDragInput
+{
+	bool leftButtonPressed;
+	POINT startPoint; // point where cursor was, when user pressed mouse button
+	POINT currentPos;
+};
+
 static bool programRunning = true;
 
+static MouseDragInput mouseDragInput;
 static std::vector<WPARAM> inputBuffer;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -30,14 +39,13 @@ void ProcessInput();
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR cmd, int nCmdShow)
 {
 	Renderer renderer(hInstance, WindowProc, nCmdShow);
-	GamePlayEngine gamePlayEngine(32, 18);
+	int physw = 64;
+	int physh = 36;
+	GamePlayEngine gamePlayEngine(physw, physh);
 	MSG msg;
 	msg.message = WM_NULL;
 
-	gamePlayEngine.SpawnSnake(3, 10, 1, LEFT);
-	gamePlayEngine.SpawnSnake(3, 8, 1, RIGHT);
-
-	int newSnakey = 1;
+	int newSnakey = 0;
 	int lastTickTime = 0;
 	bool gameRunning = false;
 	int appleSpawnCounter = 5;
@@ -49,10 +57,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR cmd, in
 		}
 		else
 		{
-			if (gamePlayEngine.GetNumberOfSnakes() == 0)
-			{
-				//gamePlayEngine.SpawnSnake(3, 32 / 2 - 2, 18 / 2, LEFT);
-			}
 			if (inputBuffer.size() > 0)
 			{
 				switch (inputBuffer[0])
@@ -65,7 +69,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR cmd, in
 					gameRunning = !gameRunning;
 					break;
 				case VK_F1:
-					gamePlayEngine.SpawnSnake(3, 10, (newSnakey % 16) + 1, LEFT);
+					gamePlayEngine.SpawnSnake(3, physw / 2, (newSnakey % (physh - 2)) + 1, LEFT);
 					newSnakey += 1;
 					break;
 				}
@@ -76,13 +80,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR cmd, in
 				gamePlayEngine.MoveSnakes();
 				lastTickTime = clock();
 				appleSpawnCounter += 1;
-				if (appleSpawnCounter >= 5)
+				if (appleSpawnCounter >= 2)
 				{
 					appleSpawnCounter = 0;
-					gamePlayEngine.SpawnApple(rand() % 30 + 1, rand() % 16 + 1);
+					gamePlayEngine.SpawnApple();
 				}
 			}
 			renderer.RenderFrame(gamePlayEngine.GetFrameRenderingInput());
+			Sleep(1);
 		}
 	}
 
@@ -100,6 +105,16 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_KEYDOWN:
 		inputBuffer.push_back(wParam);
+		break;
+	case WM_LBUTTONDOWN:
+		mouseDragInput.startPoint = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+		mouseDragInput.leftButtonPressed = true;
+		break;
+	case WM_LBUTTONUP:
+		mouseDragInput.leftButtonPressed = false;
+		break;
+	case WM_MOUSEMOVE:
+		mouseDragInput.currentPos = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
 		break;
 	}
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
