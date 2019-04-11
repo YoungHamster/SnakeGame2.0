@@ -163,6 +163,9 @@ void Renderer::RenderFrame(FrameRenderingInput renderingInput)
 				case BARRIER:
 					DrawBitmap(bitmaps[38], &rect, NULL, 1.0f); // 38 is barrier texture
 					break;
+				case SNAKE:
+					DrawBitmap(bitmaps[36], &rect, NULL, 0.5f);
+					break;
 				}
 			}
 		}

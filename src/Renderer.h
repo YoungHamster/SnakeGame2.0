@@ -11,8 +11,8 @@
 #include "CyclicBuffer.h"
 
 #define BITMAPSNUMBER 81
-#define SCREENWIDTH 1280
-#define SCREENHEIGTH 720
+#define SCREENWIDTH 1600
+#define SCREENHEIGTH 900
 
 enum RendererErrors
 {

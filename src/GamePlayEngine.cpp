@@ -30,7 +30,7 @@ GamePlayEngine::~GamePlayEngine()
 
 void GamePlayEngine::ChangeObject(int x, int y, int type) 
 {
-	if (x < 0 || y < 0 || x > physw || y > physh)
+	if (x < 0 || y < 0 || x > physw || y > physh || GetObjType(x, y) == BARRIER)
 	{
 		return;
 	}
@@ -68,6 +68,17 @@ int GamePlayEngine::SpawnSnake(int size, int headx, int heady, char headdir, AIT
 	}
 
 	return number_of_snakes - 1;
+}
+
+void GamePlayEngine::SplitSnakes(int minLenghtToSplit)
+{
+	for (int i = 0; i < number_of_snakes; i++)
+	{
+		if (snakes[i].snake.size() >= minLenghtToSplit)
+		{
+			SplitSnake(i);
+		}
+	}
 }
 
 void GamePlayEngine::SpawnApple()
@@ -131,20 +142,45 @@ void GamePlayEngine::HandleSnakeAI(int snake_id)
 		{
 			switch (GetObjType(snakes[snake_id].snake[0].x + j - SNAKE_FOV_WIDTH / 2, snakes[snake_id].snake[0].y + i - SNAKE_FOV_HEIGHT / 2))
 			{
-			case APPLE: resultingWeight = resultingWeight + snakes[snake_id].foodWeights[j][i]; break;
-			case BARRIER: resultingWeight = resultingWeight + snakes[snake_id].obstacleWeights[j][i]; break;
-			//case SNAKE: resultingWeight = resultingWeight + snakes[snake_id].obstacleWeights[j][i]; break;
+			case APPLE: resultingWeight = resultingWeight + snakes[snake_id].foodWeights[SNAKE_FOV_HEIGHT - i - 1][j]; break;
+			case BARRIER: resultingWeight = resultingWeight + snakes[snake_id].obstacleWeights[SNAKE_FOV_HEIGHT - i - 1][j]; break;
+			case SNAKE: resultingWeight = resultingWeight + snakes[snake_id].obstacleWeights[SNAKE_FOV_HEIGHT - i - 1][j]; break;
 			}
 		}
 	}
 	ChangeSnakeDirection(snake_id, resultingWeight.GetDirection());
 }
 
+void GamePlayEngine::SplitSnake(int snake_id)
+{
+	snakes.push_back(Snake());
+	number_of_snakes += 1;	
+	snakes[number_of_snakes - 1].aiType = snakes[snake_id].aiType;
+	for (int i = 0; i < SNAKE_FOV_HEIGHT; i++)
+	{
+		for (int j = 0; j < SNAKE_FOV_WIDTH; j++)
+		{
+			snakes[number_of_snakes - 1].foodWeights[i][j] = snakes[snake_id].foodWeights[i][j];
+			snakes[number_of_snakes - 1].obstacleWeights[i][j] = snakes[snake_id].obstacleWeights[i][j];
+		}
+	}
+	snakes[number_of_snakes - 1].newdir = 0;
+	snakes[number_of_snakes - 1].texture = snakes[snake_id].texture;
+
+	snakes[number_of_snakes - 1].snake.resize(snakes[snake_id].snake.size() / 2 - 1);
+	for (int i = 0; i < snakes[number_of_snakes - 1].snake.size(); i++)
+	{
+		snakes[number_of_snakes - 1].snake[i] = snakes[snake_id].snake[snakes[snake_id].snake.size() / 2 + i - 1];
+	}
+
+	snakes[snake_id].snake.erase(snakes[snake_id].snake.begin() + snakes[snake_id].snake.size() / 2, snakes[snake_id].snake.end());
+}
+
 void GamePlayEngine::MoveSnakes()
 {
 	for (int i = 0; i < number_of_snakes; i++)
 	{
-		HandleSnakeAI(i);
+		if(snakes[i].aiType != realPlayer) HandleSnakeAI(i);
 	}
 	for (int i = 0; i < snakes.size(); i++)
 	{
