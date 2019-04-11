@@ -65,13 +65,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR cmd, in
 				case A: gamePlayEngine.ChangeSnakeDirection(0, LEFT); break;
 				case S: gamePlayEngine.ChangeSnakeDirection(0, DOWN); break;
 				case D: gamePlayEngine.ChangeSnakeDirection(0, RIGHT); break;
-				case VK_RETURN:
-					gameRunning = !gameRunning;
-					break;
+				case VK_RETURN: gameRunning = !gameRunning;	break;
 				case VK_F1:
-					gamePlayEngine.SpawnSnake(3, physw / 2, (newSnakey % (physh - 2)) + 1, LEFT);
+					gamePlayEngine.SpawnSnake(3, physw / 2, (newSnakey % (physh - 2)) + 1, LEFT, ai);
 					newSnakey += 1;
 					break;
+				case VK_F5: gamePlayEngine.MoveSnakes(); break;
 				}
 				inputBuffer.erase(inputBuffer.begin());
 			}

@@ -17,10 +17,11 @@ private:
 	void DespawnSnake(int snake_id);
 	void FeedSnake(int snake_id);
 	void ShortenSnake(int snake_id);
+	void HandleSnakeAI(int snake_id);
 public:
 	GamePlayEngine(int physw, int physh);
 	~GamePlayEngine();
-	int SpawnSnake(int size, int headx, int heady, char headdir);
+	int SpawnSnake(int size, int headx, int heady, char headdir, AITypes aiType);
 	void SpawnApple();
 	void MoveSnakes();
 	void ChangeSnakeDirection(int snake_id, char dir);

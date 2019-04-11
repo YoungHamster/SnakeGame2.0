@@ -46,12 +46,13 @@ int GamePlayEngine::GetObjType(int x, int y)
 	return physics[y*physw + x].type;
 }
 
-int GamePlayEngine::SpawnSnake(int size, int headx, int heady, char headdir)
+int GamePlayEngine::SpawnSnake(int size, int headx, int heady, char headdir, AITypes aiType)
 {
 	snakes.push_back(Snake());
 	number_of_snakes += 1;
 	snakes.at(number_of_snakes - 1).snake.resize(size);
 	snakes.at(number_of_snakes - 1).newdir = headdir;
+	snakes.at(number_of_snakes - 1).aiType = aiType;
 	SnakeBlock sb = { headx, heady, headdir };
 	for (int i = 0; i < size; i++)
 	{
@@ -65,6 +66,7 @@ int GamePlayEngine::SpawnSnake(int size, int headx, int heady, char headdir)
 		snakes.at(number_of_snakes - 1).snake[i] = sb;
 		ChangeObject(sb.x, sb.y, SNAKE);
 	}
+
 	return number_of_snakes - 1;
 }
 
@@ -120,8 +122,30 @@ void GamePlayEngine::ShortenSnake(int snake_id)
 	// TODO
 }
 
+void GamePlayEngine::HandleSnakeAI(int snake_id)
+{
+	AIWeight resultingWeight = { 0, 0, 0, 0 };
+	for (int i = 0; i < SNAKE_FOV_HEIGHT; i++)
+	{
+		for (int j = 0; j < SNAKE_FOV_WIDTH; j++)
+		{
+			switch (GetObjType(snakes[snake_id].snake[0].x + j - SNAKE_FOV_WIDTH / 2, snakes[snake_id].snake[0].y + i - SNAKE_FOV_HEIGHT / 2))
+			{
+			case APPLE: resultingWeight = resultingWeight + snakes[snake_id].foodWeights[j][i]; break;
+			case BARRIER: resultingWeight = resultingWeight + snakes[snake_id].obstacleWeights[j][i]; break;
+			//case SNAKE: resultingWeight = resultingWeight + snakes[snake_id].obstacleWeights[j][i]; break;
+			}
+		}
+	}
+	ChangeSnakeDirection(snake_id, resultingWeight.GetDirection());
+}
+
 void GamePlayEngine::MoveSnakes()
 {
+	for (int i = 0; i < number_of_snakes; i++)
+	{
+		HandleSnakeAI(i);
+	}
 	for (int i = 0; i < snakes.size(); i++)
 	{
 		int x = snakes.at(i).snake[0].x;
