@@ -72,16 +72,17 @@ struct Snake
 	char newdir = 0;
 	std::vector<SnakeBlock> snake;
 	AITypes aiType;
+	bool weightsWereChanged = false;
 	AIWeight foodWeights[SNAKE_FOV_WIDTH][SNAKE_FOV_HEIGHT] = {
-	{ AIWeight(0, 2, 2, 0), AIWeight(0, 0, 0, 0), AIWeight(0, 0, 0, 0), AIWeight(3, 0, 1, 0), AIWeight(1, 0, 0, 0), AIWeight(3, 0, 0, 1), AIWeight(0, 0, 0, 0), AIWeight(0, 0, 0, 0), AIWeight(1, 0, 0, 1) },
-	{ AIWeight(0, 0, 0, 0), AIWeight(2, 0, 2, 0), AIWeight(0, 0, 0, 0), AIWeight(3, 0, 1, 0), AIWeight(2, 0, 0, 0), AIWeight(3, 0, 0, 1), AIWeight(0, 0, 0, 0), AIWeight(1, 0, 0, 1), AIWeight(0, 0, 0, 0) },
-	{ AIWeight(0, 0, 0, 0), AIWeight(0, 0, 0, 0), AIWeight(2, 0, 2, 0), AIWeight(3, 0, 2, 0), AIWeight(3, 0, 0, 0), AIWeight(3, 0, 0, 2), AIWeight(2, 0, 0, 2), AIWeight(0, 0, 0, 0), AIWeight(0, 0, 0, 0) },
-	{ AIWeight(0, 0, 0, 0), AIWeight(0, 0, 0, 0), AIWeight(0, 0, 0, 0), AIWeight(3, 0, 3, 0), AIWeight(4, -4, 0, 0), AIWeight(3, 0, 0, 3), AIWeight(0, 0, 0, 0), AIWeight(0, 0, 0, 0), AIWeight(0, 0, 0, 0) },
-	{ AIWeight(0, 0, 1, 0), AIWeight(0, 0, 2, 0), AIWeight(0, 0, 3, 0), AIWeight(0, 0, 4, -4), AIWeight(0, 0, 0, 0), AIWeight(0, 0, -4, 4), AIWeight(0, 0, 0, 3), AIWeight(0, 0, 0, 2), AIWeight(0, 0, 0, 1) },
-	{ AIWeight(0, 0, 0, 0), AIWeight(0, 0, 0, 0), AIWeight(0, 0, 0, 0), AIWeight(0, 3, 3, 0), AIWeight(-4, 4, 0, 0), AIWeight(3, 3, 0, 3), AIWeight(0, 0, 0, 0), AIWeight(0, 0, 0, 0), AIWeight(0, 0, 0, 0) },
-	{ AIWeight(0, 0, 0, 0), AIWeight(0, 0, 0, 0), AIWeight(0, 2, 2, 0), AIWeight(0, 3, 2, 0), AIWeight(0, 3, 0, 0), AIWeight(3, 0, 0, 2), AIWeight(0, 2, 0, 2), AIWeight(0, 0, 0, 0), AIWeight(0, 0, 0, 0) },
-	{ AIWeight(0, 0, 0, 0), AIWeight(0, 1, 1, 0), AIWeight(0, 0, 0, 0), AIWeight(0, 3, 1, 0), AIWeight(0, 2, 0, 0), AIWeight(3, 0, 0, 1), AIWeight(0, 0, 0, 0), AIWeight(0, 1, 0, 1), AIWeight(0, 0, 0, 0) },
-	{ AIWeight(0, 1, 1, 0), AIWeight(0, 0, 0, 0), AIWeight(0, 0, 0, 0), AIWeight(0, 3, 1, 0), AIWeight(0, 1, 0, 0), AIWeight(3, 0, 0, 1), AIWeight(0, 0, 0, 0), AIWeight(0, 0, 0, 0), AIWeight(0, 1, 0, 1) }
+	{ AIWeight(1, 0, 1, 0),  AIWeight(1, 0, 1, 0),   AIWeight(1, 0, 1, 0),   AIWeight(1, 0, 1, 0),   AIWeight(1, -1, 0, 0), AIWeight(1, 0, 0, 1),   AIWeight(1, 0, 0, 1),   AIWeight(1, 0, 0, 1),   AIWeight(1, 0, 0, 1) },
+	{ AIWeight(1, 0, 1, 0),  AIWeight(1, 0, 1, 0),   AIWeight(1, 0, 1, 0),   AIWeight(1, -1, 1, -1), AIWeight(2, -2, 0, 0), AIWeight(1, -1, -1, 1), AIWeight(1, 0, 0, 1),   AIWeight(1, 0, 0, 1),   AIWeight(1, 0, 0, 1) },
+	{ AIWeight(1, 0, 1, 0),  AIWeight(1, 0, 1, 0),   AIWeight(1, -1, 1, -1), AIWeight(2, -2, 2, -2), AIWeight(3, -3, 0, 0), AIWeight(2, -2, -2, 2), AIWeight(1, -1, -1, 1), AIWeight(1, 0, 0, 1),   AIWeight(1, 0, 0, 1) },
+	{ AIWeight(1, 0, 1, 0),  AIWeight(1, -1, 1, -1), AIWeight(2, -2, 2, -2), AIWeight(3, -3, 3, -3), AIWeight(4, -4, 0, 0), AIWeight(3, -3, -3, 3), AIWeight(2, -2, -2, 2), AIWeight(1, -1, -1, 1), AIWeight(1, 0, 0, 1) },
+	{ AIWeight(0, 0, 1, -1), AIWeight(0, 0, 2, -2),  AIWeight(0, 0, 3, -3),  AIWeight(0, 0, 4, -4),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, -4, 4),  AIWeight(0, 0, -3, 3),  AIWeight(0, 0, -2, 2),  AIWeight(0, 0, -1, 1) },
+	{ AIWeight(0, 1, 1, 0),  AIWeight(-1, 1, 1, -1), AIWeight(-2, 2, 2, -2), AIWeight(-3, 3, 3, -3), AIWeight(-4, 4, 0, 0), AIWeight(-3, 3, -3, 3), AIWeight(-2, 2, -2, 2), AIWeight(-1, 1, -1, 1), AIWeight(0, 1, 0, 1) },
+	{ AIWeight(0, 1, 1, 0),  AIWeight(0, 1, 1, 0),   AIWeight(-1, 1, 1, -1), AIWeight(-2, 2, 2, -2), AIWeight(-3, 3, 0, 0), AIWeight(-2, 2, -2, 2), AIWeight(-1, 1, -1, 1), AIWeight(0, 1, 0, 1),   AIWeight(0, 1, 0, 1) },
+	{ AIWeight(0, 1, 1, 0),  AIWeight(0, 1, 1, 0),   AIWeight(0, 1, 1, 0),   AIWeight(-1, 1, 1, -1), AIWeight(-2, 2, 0, 0), AIWeight(-1, 1, -1, 1), AIWeight(0, 1, 0, 1),   AIWeight(0, 1, 0, 1),   AIWeight(0, 1, 0, 1) },
+	{ AIWeight(0, 1, 1, 0),  AIWeight(0, 1, 1, 0),   AIWeight(0, 1, 1, 0),   AIWeight(0, 1, 1, 0),   AIWeight(-1, 1, 0, 0), AIWeight(0, 1, 0, 1),   AIWeight(0, 1, 0, 1),   AIWeight(0, 1, 0, 1),   AIWeight(0, 1, 0, 1) }
 	};
 	AIWeight obstacleWeights[SNAKE_FOV_WIDTH][SNAKE_FOV_HEIGHT] = {
 	{ AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(-1, 1, 1, 1), AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0) },

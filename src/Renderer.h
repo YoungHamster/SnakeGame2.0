@@ -47,7 +47,7 @@ private:
 	void EndDraw();
 	void ClearScreen();
 	bool LoadID2D1Bitmap(LPCWSTR filename, ID2D1Bitmap **ppBitmap);
-	void DrawBitmap(ID2D1Bitmap* bmp, RECT* rect, RECT* srcrect, float opacity);
+	void DrawBitmap(ID2D1Bitmap* bmp, RECT rect, float opacity);
 
 public:
 	

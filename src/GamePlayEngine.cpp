@@ -70,13 +70,13 @@ int GamePlayEngine::SpawnSnake(int size, int headx, int heady, char headdir, AIT
 	return number_of_snakes - 1;
 }
 
-void GamePlayEngine::SplitSnakes(int minLenghtToSplit)
+void GamePlayEngine::SplitSnakes(int minLenghtToSplit, bool evolutionaryMode)
 {
 	for (int i = 0; i < number_of_snakes; i++)
 	{
 		if (snakes[i].snake.size() >= minLenghtToSplit)
 		{
-			SplitSnake(i);
+			SplitSnake(i, evolutionaryMode);
 		}
 	}
 }
@@ -151,17 +151,52 @@ void GamePlayEngine::HandleSnakeAI(int snake_id)
 	ChangeSnakeDirection(snake_id, resultingWeight.GetDirection());
 }
 
-void GamePlayEngine::SplitSnake(int snake_id)
+void GamePlayEngine::SplitSnake(int snake_id, bool evolutionaryMode)
 {
 	snakes.push_back(Snake());
 	number_of_snakes += 1;	
 	snakes[number_of_snakes - 1].aiType = snakes[snake_id].aiType;
+	snakes[number_of_snakes - 1].weightsWereChanged = snakes[snake_id].weightsWereChanged;
 	for (int i = 0; i < SNAKE_FOV_HEIGHT; i++)
 	{
 		for (int j = 0; j < SNAKE_FOV_WIDTH; j++)
 		{
 			snakes[number_of_snakes - 1].foodWeights[i][j] = snakes[snake_id].foodWeights[i][j];
 			snakes[number_of_snakes - 1].obstacleWeights[i][j] = snakes[snake_id].obstacleWeights[i][j];
+			if (evolutionaryMode)
+			{
+				if (rand() % 10 == 1)//chance 1 to 10
+				{
+					switch (rand() % 8)
+					{
+					case 0: 
+						snakes[number_of_snakes - 1].foodWeights[i][j].up = snakes[number_of_snakes - 1].foodWeights[i][j].up + rand() % 2 - 1;
+						break;
+					case 1: 
+						snakes[number_of_snakes - 1].foodWeights[i][j].down = snakes[number_of_snakes - 1].foodWeights[i][j].down + rand() % 2 - 1;
+						break;
+					case 2: 
+						snakes[number_of_snakes - 1].foodWeights[i][j].left = snakes[number_of_snakes - 1].foodWeights[i][j].left + rand() % 2 - 1;
+						break;
+					case 3: 
+						snakes[number_of_snakes - 1].foodWeights[i][j].right = snakes[number_of_snakes - 1].foodWeights[i][j].right + rand() % 2 - 1;
+						break;
+					case 4: 
+						snakes[number_of_snakes - 1].obstacleWeights[i][j].up = snakes[number_of_snakes - 1].obstacleWeights[i][j].up + rand() % 2 - 1;
+						break;
+					case 5:
+						snakes[number_of_snakes - 1].obstacleWeights[i][j].down = snakes[number_of_snakes - 1].obstacleWeights[i][j].down + rand() % 2 - 1;
+						break;
+					case 6:
+						snakes[number_of_snakes - 1].obstacleWeights[i][j].left = snakes[number_of_snakes - 1].obstacleWeights[i][j].left + rand() % 2 - 1;
+						break;
+					case 7:
+						snakes[number_of_snakes - 1].obstacleWeights[i][j].right = snakes[number_of_snakes - 1].obstacleWeights[i][j].right + rand() % 2 - 1;
+						break;
+					}
+					snakes[number_of_snakes - 1].weightsWereChanged = true;
+				}
+			}
 		}
 	}
 	snakes[number_of_snakes - 1].newdir = 0;
@@ -182,7 +217,7 @@ void GamePlayEngine::MoveSnakes()
 	{
 		if(snakes[i].aiType != realPlayer) HandleSnakeAI(i);
 	}
-	for (int i = 0; i < snakes.size(); i++)
+	for (int i = 0; i < number_of_snakes; i++)
 	{
 		int x = snakes.at(i).snake[0].x;
 		int y = snakes.at(i).snake[0].y;
@@ -199,11 +234,12 @@ void GamePlayEngine::MoveSnakes()
 		case BARRIER: DespawnSnake(i); i -= 1; continue; break;
 		case APPLE: FeedSnake(i); break;
 		}
-		ChangeObject(snakes.at(i).snake[snakes.at(i).snake.size() - 1].x, snakes.at(i).snake[snakes.at(i).snake.size() - 1].y, 0);
+		size_t snakeAtiSize = snakes.at(i).snake.size();
+		ChangeObject(snakes.at(i).snake[snakeAtiSize - 1].x, snakes.at(i).snake[snakeAtiSize - 1].y, 0);
 		ChangeObject(x, y, SNAKE);
-		for (int j = 0; j < snakes.at(i).snake.size(); j++)
+		for (int j = 0; j < snakeAtiSize; j++)
 		{
-			int id = (int)snakes.at(i).snake.size() - j - 1;
+			int id = (int)snakeAtiSize - j - 1;
 			switch (snakes.at(i).snake[id].dir)
 			{
 			case UP: snakes.at(i).snake[id].y += 1; break;
@@ -220,45 +256,50 @@ void GamePlayEngine::MoveSnakes()
 
 	// This this code checks if snakes collide with any other snakes and their own bodies
 	std::vector<SnakeBlock> allSnakeBlocksWithoutHeads; // sorry for long name
-	std::vector<SnakeBlock> snakesHeads;
-	snakesHeads.resize(snakes.size());
-	for (int i = 0; i < snakes.size(); i++)
+	SnakeBlock *snakesHeads = new SnakeBlock[snakes.size()];
+	for (int i = 0; i < number_of_snakes; i++)
 	{
 		snakesHeads[i] = snakes[i].snake[0];
-		int prevSize = (int)allSnakeBlocksWithoutHeads.size();
-		allSnakeBlocksWithoutHeads.resize(allSnakeBlocksWithoutHeads.size() + snakes[i].snake.size() - 1);
-		for (int j = 1; j < snakes[i].snake.size(); j++)
+		size_t prevSize = allSnakeBlocksWithoutHeads.size();
+		size_t snakeAtiSize = snakes[i].snake.size();
+		allSnakeBlocksWithoutHeads.resize(allSnakeBlocksWithoutHeads.size() + snakeAtiSize - 1);
+		for (int j = 1; j < snakeAtiSize; j++)
 		{
 			allSnakeBlocksWithoutHeads[prevSize + j - 1] = snakes[i].snake[j];
 		}
 	}
-	for (int i = 0; i < snakes.size(); i++)
+	size_t allSnakeBlocksWithoutHeadsSize = allSnakeBlocksWithoutHeads.size();
+	for (int i = 0; i < number_of_snakes; i++)
 	{
-		for (int j = 0; j < snakes.size(); j++)
+		size_t snakeAtiSize = snakes[i].snake.size();
+		for (int j = 0; j < number_of_snakes; j++)
 		{
 			// if i == j it means, that we try to compare snake's head with itself
-			if (i != j && snakes[i].snake.size() > 0)
+			if (i != j && snakeAtiSize > 0)
 			{
 				if (snakes[i].snake[0].x == snakesHeads[j].x && snakes[i].snake[0].y == snakesHeads[j].y)
 				{
 					snakes[i].snake.clear(); // clear snake instead of Despawning it to keep this algorithm easy
+					snakeAtiSize = 0;
+					j = number_of_snakes;
 				}
 			}
 		}
-		for (int j = 0; j < allSnakeBlocksWithoutHeads.size(); j++)
+		for (int j = 0; j < allSnakeBlocksWithoutHeadsSize; j++)
 		{
-			if (snakes[i].snake.size() > 0)
+			if (snakeAtiSize > 0)
 			{
 				if (snakes[i].snake[0].x == allSnakeBlocksWithoutHeads[j].x && snakes[i].snake[0].y == allSnakeBlocksWithoutHeads[j].y)
 				{
 					snakes[i].snake.clear();
+					j = allSnakeBlocksWithoutHeadsSize;
 				}
 			}
 		}
 	}
 
 	// delete all empty snakes
-	for (int i = 0; i < snakes.size(); i++)
+	for (int i = 0; i < number_of_snakes; i++)
 	{
 		if (snakes[i].snake.size() == 0)
 		{

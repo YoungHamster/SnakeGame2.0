@@ -158,13 +158,10 @@ void Renderer::RenderFrame(FrameRenderingInput renderingInput)
 				switch (renderingInput.physics[i*renderingInput.physicsWidth + j].type)
 				{
 				case APPLE: 
-					DrawBitmap(bitmaps[37], &rect, NULL, 1.0f); // 37 is apple texture
+					DrawBitmap(bitmaps[37], rect, 1.0f); // 37 is apple texture
 					break;
 				case BARRIER:
-					DrawBitmap(bitmaps[38], &rect, NULL, 1.0f); // 38 is barrier texture
-					break;
-				case SNAKE:
-					DrawBitmap(bitmaps[36], &rect, NULL, 0.5f);
+					DrawBitmap(bitmaps[38], rect, 1.0f); // 38 is barrier texture
 					break;
 				}
 			}
@@ -206,14 +203,14 @@ void Renderer::RenderFrame(FrameRenderingInput renderingInput)
 					bitmapId += 5;
 				}
 			}
-			DrawBitmap(bitmaps[bitmapId], &rect, NULL, 0.75f);
+			DrawBitmap(bitmaps[bitmapId], rect, 0.75f);
 
 			// glowing effect for snakes
 			rect.left -= LONG(pixelsperblockw * 2);
 			rect.top -= LONG(pixelsperblockh * 2);
 			rect.right += LONG(pixelsperblockw * 2);
 			rect.bottom += LONG(pixelsperblockh * 2);
-			DrawBitmap(bitmaps[80], &rect, NULL, 0.1f);
+			DrawBitmap(bitmaps[80], rect, 0.1f);
 		}
 	}
 	EndDraw();
@@ -226,44 +223,11 @@ void Renderer::DragCamera(float x, float y)
 
 HWND Renderer::GetWindowHandle() { return windowHandle; }
 
-void Renderer::DrawBitmap(ID2D1Bitmap* bmp, RECT* rect, RECT* srcrect, float opacity)
+void Renderer::DrawBitmap(ID2D1Bitmap* bmp, RECT rect, float opacity)
 {
-	if (rect != NULL && srcrect != NULL)
-	{
-		rendertarget->DrawBitmap(
-			bmp, // Bitmap
-			D2D1::RectF((float)rect->left, (float)rect->top, (float)rect->right, (float)rect->bottom), // Destination rectangle
-			opacity, // Opacity
-			D2D1_BITMAP_INTERPOLATION_MODE::D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR,
-			D2D1::RectF((float)srcrect->left, (float)srcrect->top, (float)srcrect->right, (float)srcrect->bottom) // Source rectangle
-		);
-		return;
-	}
-	if (srcrect == NULL)
-	{
-		rendertarget->DrawBitmap(
-			bmp, // Bitmap
-			D2D1::RectF((float)rect->left, (float)rect->top, (float)rect->right, (float)rect->bottom), // Destination rectangle
-			opacity, // Opacity
-			D2D1_BITMAP_INTERPOLATION_MODE::D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR,
-			D2D1::RectF(0, 0, (float)bmp->GetPixelSize().width, (float)bmp->GetPixelSize().height) // Source rectangle
-		);
-		return;
-	}
-	if (rect == NULL)
-	{
-		rendertarget->DrawBitmap(
-			bmp, // Bitmap
-			D2D1::RectF(0, 0, (float)srcrect->right, (float)srcrect->bottom), // Destination rectangle
-			opacity, // Opacity
-			D2D1_BITMAP_INTERPOLATION_MODE::D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR,
-			D2D1::RectF((float)srcrect->left, (float)srcrect->top, (float)srcrect->right, (float)srcrect->bottom) // Source rectangle
-		);
-		return;
-	}
 	rendertarget->DrawBitmap(
 		bmp, // Bitmap
-		D2D1::RectF(0, 0, (float)bmp->GetPixelSize().width, (float)bmp->GetPixelSize().height), // Destination rectangle
+		D2D1::RectF((float)rect.left, (float)rect.top, (float)rect.right, (float)rect.bottom), // Destination rectangle
 		opacity, // Opacity
 		D2D1_BITMAP_INTERPOLATION_MODE::D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR,
 		D2D1::RectF(0, 0, (float)bmp->GetPixelSize().width, (float)bmp->GetPixelSize().height) // Source rectangle

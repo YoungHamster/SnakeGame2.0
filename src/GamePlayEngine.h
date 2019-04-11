@@ -18,12 +18,12 @@ private:
 	void FeedSnake(int snake_id);
 	void ShortenSnake(int snake_id);
 	void HandleSnakeAI(int snake_id);
-	void SplitSnake(int snake_id);
+	void SplitSnake(int snake_id, bool evolutionaryMode);
 public:
 	GamePlayEngine(int physw, int physh);
 	~GamePlayEngine();
 	int SpawnSnake(int size, int headx, int heady, char headdir, AITypes aiType);
-	void SplitSnakes(int minLenghtToSplit);
+	void SplitSnakes(int minLenghtToSplit, bool evolutionaryMode);
 	void SpawnApple();
 	void MoveSnakes();
 	void ChangeSnakeDirection(int snake_id, char dir);
