@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vector>
+#include "DynamicArray.h"
 
 // Physical objects possible types
 #define NOTHING 0
@@ -70,7 +70,7 @@ struct Snake
 {
 	int texture = -1;
 	char newdir = 0;
-	std::vector<SnakeBlock> snake;
+	DynamicArray snake;
 	AITypes aiType;
 	bool weightsWereChanged = false;
 	AIWeight foodWeights[SNAKE_FOV_WIDTH][SNAKE_FOV_HEIGHT] = {
@@ -95,4 +95,5 @@ struct Snake
 	{ AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, -1, 0), AIWeight(2, -2, 2, 2), AIWeight(0, 0, 0, -1), AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0) },
 	{ AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(1, -1, 1, 1), AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0) }
 	};
+	Snake():snake(sizeof(SnakeBlock)){}
 };

@@ -16,7 +16,8 @@ DynamicArray::~DynamicArray()
 {
 	if (array)
 	{
-		delete[] array;
+		free(array);
+		array = nullptr;
 	}
 }
 
@@ -28,7 +29,7 @@ void DynamicArray::PushBack(void * element)
 		realNumberOfElements += 1;
 	}
 	meanNumberOfElements += 1;
-	memcpy((char*)array + (meanNumberOfElements + 1) * sizeOfOneElement, element, sizeOfOneElement);
+	memcpy((char*)array + (meanNumberOfElements - 1) * sizeOfOneElement, element, sizeOfOneElement);
 }
 
 void DynamicArray::PopBack()
@@ -56,22 +57,33 @@ void DynamicArray::Delete(int where)
 
 void DynamicArray::Delete(int firstElement, int lastElement)
 {
+	memcpy((char*)array + (firstElement - 1) * sizeOfOneElement,
+		(char*)array + lastElement * sizeOfOneElement,
+		sizeOfOneElement * (meanNumberOfElements - lastElement - 1));
 	meanNumberOfElements -= lastElement - firstElement;
-	memcpy((char*)array + firstElement * sizeOfOneElement,
-		(char*)array + (lastElement + 1) * sizeOfOneElement,
-		sizeOfOneElement * (meanNumberOfElements - lastElement));
 }
 
 void DynamicArray::Clear()
 {
 	meanNumberOfElements = 0;
 	realNumberOfElements = 0;
-	delete[] array;
+	free(array);
+	array = nullptr;
+}
+
+void * DynamicArray::At(int i)
+{
+	return (char*)array + sizeOfOneElement * i;
 }
 
 void * DynamicArray::operator[](int i)
 {
-	return (char*)array + sizeOfOneElement * i;
+	return At(i);
+}
+
+void * DynamicArray::GetArray()
+{
+	return array;
 }
 
 size_t DynamicArray::Size()

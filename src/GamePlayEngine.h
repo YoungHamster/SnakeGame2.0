@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 
 #include "GamePlayStructsAndDefines.h"
 #include "FrameRenderingInput.h"
@@ -11,7 +12,7 @@ private:
 	int physh = 0;
 	PhysicalObject *physics;
 	int number_of_snakes;
-	std::vector<Snake> snakes;
+	DynamicArray snakes;
 
 	void ChangeObject(int x, int y, int type);
 	int GetObjType(int x, int y);
@@ -28,6 +29,10 @@ public:
 	void SpawnApple();
 	void MoveSnakes();
 	void ChangeSnakeDirection(int snake_id, char dir);
+	/* Functions to avoid pointer cast in code, because it is impossible to read */
+	Snake* GetSnake(int snake_id);
+	SnakeBlock* GetSnakeBlock(int snake_id, int block_id);
+
 	FrameRenderingInput GetFrameRenderingInput();
 	int GetNumberOfSnakes();
 };
