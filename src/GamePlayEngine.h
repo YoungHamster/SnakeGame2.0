@@ -2,6 +2,7 @@
 
 #include "GamePlayStructsAndDefines.h"
 #include "FrameRenderingInput.h"
+#include "DynamicArray.h"
 
 class GamePlayEngine
 {
