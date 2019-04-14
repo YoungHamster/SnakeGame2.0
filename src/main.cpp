@@ -71,13 +71,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR cmd, in
 					newSnakey += 1;
 					break;
 				case VK_F5: gamePlayEngine.MoveSnakes(); break;
+				case VK_F2: gamePlayEngine.dbgGetObject(); break;
 				}
 				inputBuffer.erase(inputBuffer.begin());
 			}
 			if (gameRunning)
 			{
 				gamePlayEngine.MoveSnakes();
-				gamePlayEngine.SplitSnakes(6);
+				gamePlayEngine.SplitSnakes(10);
 				for (int i = 0; i < 70; i++)
 				{
 					gamePlayEngine.SpawnApple();

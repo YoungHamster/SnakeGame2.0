@@ -101,7 +101,6 @@ void GamePlayEngine::DespawnSnake(int snake_id)
 		ChangeObject(snakesManager.snakes[snake_id].body[i].x, snakesManager.snakes[snake_id].body[i].y, 0);
 	}
 	snakesManager.KillSnake(snake_id);
-	*number_of_snakes -= 1;
 }
 
 void GamePlayEngine::FeedSnake(int snake_id)
@@ -158,9 +157,14 @@ void GamePlayEngine::SplitSnake(int snake_id)
 	int newSnakeSize = snakesManager.snakes[snake_id].bodySize / 2 - 1;
 	for (int i = 0; i < newSnakeSize; i++)
 	{
-		snakesManager.AddBlockToSnake(*number_of_snakes - 1, snakesManager.snakes[snake_id].body[newSnakeSize + i - 1]);
+		snakesManager.AddBlockToSnake(*number_of_snakes - 1, snakesManager.snakes[snake_id].body[newSnakeSize + i + 2]);
 	}
-	snakesManager.CutTailOfSnake(snake_id, snakesManager.snakes[snake_id].bodySize / 2);
+	for (int i = 0; i < snakesManager.snakes[snake_id].bodySize / 2; i++)
+	{
+		ChangeObject(snakesManager.snakes[snake_id].body[snakesManager.snakes[snake_id].bodySize / 2 + i].x, 
+			snakesManager.snakes[snake_id].body[snakesManager.snakes[snake_id].bodySize / 2 + i].y, 0);
+	}
+	snakesManager.snakes[snake_id].bodySize -= snakesManager.snakes[snake_id].bodySize / 2;
 }
 
 void GamePlayEngine::MoveSnakes()
@@ -199,73 +203,34 @@ void GamePlayEngine::MoveSnakes()
 			case LEFT: snakesManager.snakes[i].body[id].x -= 1; break;
 			case RIGHT: snakesManager.snakes[i].body[id].x += 1;  break;
 			}
-			if (id >= 1)
+			if (id > 0)
 			{
 				snakesManager.snakes[i].body[id].dir = snakesManager.snakes[i].body[id - 1].dir;
 			}
 		}
 	}
-
-	// This this code checks if snakes collide with any other snakes and their own bodies
-	SnakeBlock* allSnakeBlocksWithoutHeads; // sorry for long name
-	int allSnakeBlocksWithoutHeadsSize = 0;
+	bool* isSnakeDead = new bool[*number_of_snakes];
 	for (int i = 0; i < *number_of_snakes; i++)
 	{
-		allSnakeBlocksWithoutHeadsSize += snakesManager.snakes[i].bodySize;
-	}
-	allSnakeBlocksWithoutHeads = new SnakeBlock[allSnakeBlocksWithoutHeadsSize];
-	SnakeBlock *snakesHeads = new SnakeBlock[*number_of_snakes];
-	int prevSize = 0;
-	for (int i = 0; i < *number_of_snakes; i++)
-	{
-		snakesHeads[i] = snakesManager.snakes[i].body[0];
-		memcpy(allSnakeBlocksWithoutHeads + prevSize, snakesManager.snakes[i].body + 1, (snakesManager.snakes[i].bodySize - 1) * sizeof(SnakeBlock));
-		prevSize += snakesManager.snakes[i].bodySize;
-	}
-	for (int i = 0; i < *number_of_snakes; i++)
-	{
-		int snakeAtiSize = snakesManager.snakes[i].bodySize;
+		isSnakeDead[i] = false;
 		for (int j = 0; j < *number_of_snakes; j++)
 		{
-			// if i == j it means, that we try to compare snake's head with itself
-			if (i != j && snakeAtiSize > 0)
+			for (int k = 0; k < snakesManager.snakes[j].bodySize; k++)
 			{
-				if (snakesManager.snakes[i].body[0].x == snakesHeads[j].x && snakesManager.snakes[i].body[0].y == snakesHeads[j].y)
+				if (i != j || k != 0)
 				{
-					
-					snakeAtiSize = 0; // set size of snake to 0 instead of Despawning it to keep this algorithm easy
-					j = *number_of_snakes;
+					if (snakesManager.snakes[i].body[0].x == snakesManager.snakes[j].body[k].x && snakesManager.snakes[i].body[0].y == snakesManager.snakes[j].body[k].y)
+					{
+						isSnakeDead[i] = true;
+					}
 				}
 			}
-		}
-		for (int j = 0; j < allSnakeBlocksWithoutHeadsSize; j++)
-		{
-			if (snakeAtiSize > 0)
-			{
-				if (snakesManager.snakes[i].body[0].x == allSnakeBlocksWithoutHeads[j].x && snakesManager.snakes[i].body[0].y == allSnakeBlocksWithoutHeads[j].y)
-				{
-					snakeAtiSize = 0;
-					j = allSnakeBlocksWithoutHeadsSize;
-				}
-			}
-		}
-		/* Clear physics from dead snake, because DespawnSnake() wont do it with bodySize set to 0 */
-		if (snakeAtiSize == 0)
-		{
-			for (int j = 0; j < snakesManager.snakes[i].bodySize; j++)
-			{
-				ChangeObject(snakesManager.snakes[i].body[j].x, snakesManager.snakes[i].body[j].y, 0);
-			}
-			snakesManager.snakes[i].bodySize = 0;
 		}
 	}
-	delete[] allSnakeBlocksWithoutHeads;
-	delete[] snakesHeads;
 
-	// delete all empty snakes
 	for (int i = 0; i < *number_of_snakes; i++)
 	{
-		if (snakesManager.snakes[i].bodySize == 0)
+		if (isSnakeDead[i])
 		{
 			DespawnSnake(i);
 			i -= 1;
@@ -287,6 +252,17 @@ void GamePlayEngine::ChangeSnakeDirection(int snake_id, char dir)
 	snakesManager.snakes[snake_id].newdir = dir;
 }
 
+void GamePlayEngine::dbgGetObject()
+{
+	for (int i = 1; i < physh - 1; i++)
+	{
+		for (int j = 1; j < physw - 1; j++)
+		{
+			if (GetObjType(i, j) == SNAKE) __debugbreak();
+		}
+	}
+}
+
 FrameRenderingInput GamePlayEngine::GetFrameRenderingInput()
 {
 	FrameRenderingInput input;
@@ -294,21 +270,7 @@ FrameRenderingInput GamePlayEngine::GetFrameRenderingInput()
 	input.physicsWidth = physw;
 	input.physicsHeight = physh;
 	input.numberOfSnakes = *number_of_snakes;
-	input.snakes = new Snake[*number_of_snakes];
-	memcpy(input.snakes, snakesManager.snakes, *number_of_snakes * sizeof(Snake));
-	int sizeOfSnakesBodies = 0;
-	for (int i = 0; i < *number_of_snakes; i++)
-	{
-		sizeOfSnakesBodies += input.snakes[i].bodySize;
-	}
-	input.snakesBodies = new SnakeBlock[sizeOfSnakesBodies];
-	int prevSize = 0;
-	for (int i = 0; i < *number_of_snakes; i++)
-	{
-		memcpy(input.snakesBodies + prevSize, snakesManager.snakes[i].body, snakesManager.snakes[i].bodySize * sizeof(SnakeBlock));
-		input.snakes[i].body = input.snakesBodies + prevSize;
-		prevSize += snakesManager.snakes[i].bodySize;
-	}
+	input.snakes = snakesManager.snakes;
 	return input;
 }
 

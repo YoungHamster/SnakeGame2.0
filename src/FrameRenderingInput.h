@@ -7,5 +7,4 @@ struct FrameRenderingInput
 	int physicsHeight;
 	int numberOfSnakes;
 	Snake *snakes = nullptr;
-	SnakeBlock* snakesBodies = nullptr;
 };

@@ -53,6 +53,8 @@ public:
 	void MoveSnakes();
 	void ChangeSnakeDirection(int snake_id, char dir);
 
+	void dbgGetObject();
+
 	FrameRenderingInput GetFrameRenderingInput();
 	int GetNumberOfSnakes();
 };

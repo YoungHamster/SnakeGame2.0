@@ -17,7 +17,5 @@ public:
 	~SnakesManager();
 	Snake* NewSnake();
 	SnakeBlock* AddBlockToSnake(int snake_id, SnakeBlock snakeBlock);
-	void CutTailOfSnake(int snake_id);
-	void CutTailOfSnake(int snake_id, int sizeToCut);
 	void KillSnake(int snake_id);
 };
