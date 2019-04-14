@@ -93,7 +93,7 @@ void SnakesManager::KillSnake(int snake_id)
 			memcpy(&snakesBodies[(snake_id + i) * supposedMaxSizeOfSnakeBody],
 				&snakesBodies[(snake_id + i + 1) * supposedMaxSizeOfSnakeBody],
 				snakes[snake_id + i + 1].bodySize * sizeof(SnakeBlock));
-			snakes[snake_id + 1].body = &snakesBodies[(snake_id + i) * supposedMaxSizeOfSnakeBody];
+			snakes[snake_id + i + 1].body = &snakesBodies[(snake_id + i) * supposedMaxSizeOfSnakeBody];
 		}
 	}
 	memcpy(&snakes[snake_id], &snakes[snake_id + 1], sizeof(Snake) * (numberOfUsedSnakes - snake_id - 1));
