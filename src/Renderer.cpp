@@ -1,7 +1,6 @@
 #include "Renderer.h"
 
 Renderer::Renderer(HINSTANCE hInstance, LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam), int nCmdShow)
-	:renderingInputHistory(sizeof(FrameRenderingInput), 6), translationHistory(sizeof(D2D1::Matrix3x2F), 2)
 {
 	/* Win api initialization */
 	WNDCLASSEX windowclass;
@@ -137,7 +136,6 @@ void Renderer::EndDraw() { rendertarget->EndDraw(); }
 
 void Renderer::RenderFrame(FrameRenderingInput renderingInput)
 {
-	*(FrameRenderingInput*)renderingInputHistory.GetNextElement() = renderingInput;
 	float pixelsperblockw = (float)rendertarget->GetPixelSize().width / (float)renderingInput.physicsWidth;
 	float pixelsperblockh = (float)rendertarget->GetPixelSize().height / (float)renderingInput.physicsHeight;
 	BeginDraw();
@@ -169,31 +167,31 @@ void Renderer::RenderFrame(FrameRenderingInput renderingInput)
 	}
 
 	int bitmapId = 0;
-	for (int i = 0; i < renderingInput.snakes->Size(); i++)
+	for (int i = 0; i < renderingInput.numberOfSnakes; i++)
 	{
-		for (int j = 0; j < renderingInput.GetSnake(i)->snake.Size(); j++)
+		for (int j = 0; j < renderingInput.snakes[i].bodySize; j++)
 			
 		{
-			rect = { LONG(renderingInput.GetSnakeBlock(i, j)->x * pixelsperblockw),
-				LONG((renderingInput.physicsHeight - renderingInput.GetSnakeBlock(i, j)->y) * pixelsperblockh),
-				LONG((renderingInput.GetSnakeBlock(i, j)->x + 1) * pixelsperblockw),
-				LONG((renderingInput.physicsHeight - (renderingInput.GetSnakeBlock(i, j)->y + 1)) * pixelsperblockh) };
-			if (((Snake*)renderingInput.snakes->At(i))->texture == -1)
+			rect = { LONG(renderingInput.snakes[i].body[j].x * pixelsperblockw),
+				LONG((renderingInput.physicsHeight - renderingInput.snakes[i].body[j].y) * pixelsperblockh),
+				LONG((renderingInput.snakes[i].body[j].x + 1) * pixelsperblockw),
+				LONG((renderingInput.physicsHeight - (renderingInput.snakes[i].body[j].y + 1)) * pixelsperblockh) };
+			if (renderingInput.snakes[i].texture == -1)
 			{
 				bitmapId = i % 4 * 9;
-				((Snake*)renderingInput.snakes->At(i))->texture = bitmapId;
+				renderingInput.snakes[i].texture = bitmapId;
 			}
 			else
 			{
-				bitmapId = ((Snake*)renderingInput.snakes->At(i))->texture;
+				bitmapId = renderingInput.snakes[i].texture;
 			}
-			if (j != 0 && j != renderingInput.GetSnake(i)->snake.Size() - 1)
+			if (j != 0 && j != renderingInput.snakes[i].bodySize - 1)
 			{
 				bitmapId += 4;
 			}
 			else
 			{
-				switch (renderingInput.GetSnakeBlock(i, j)->dir)
+				switch (renderingInput.snakes[i].body[j].dir)
 				{
 				case DOWN: bitmapId += 1; break;
 				case LEFT: bitmapId += 2; break;

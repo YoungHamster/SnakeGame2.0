@@ -1,8 +1,9 @@
 #include "GamePlayEngine.h"
 
 GamePlayEngine::GamePlayEngine(int physw, int physh)
-	:physw(physw), physh(physh), snakes(sizeof(Snake))
+	:physw(physw), physh(physh), snakesManager(physw, physh, 200)
 {
+	number_of_snakes = &snakesManager.numberOfUsedSnakes;
 	physics = new PhysicalObject[physw*physh];
 	for (int i = 0; i < physw; i++)
 	{
@@ -25,7 +26,6 @@ GamePlayEngine::GamePlayEngine(int physw, int physh)
 GamePlayEngine::~GamePlayEngine()
 {
 	delete[] physics;
-	snakes.~DynamicArray();
 }
 
 void GamePlayEngine::ChangeObject(int x, int y, int type) 
@@ -48,12 +48,9 @@ int GamePlayEngine::GetObjType(int x, int y)
 
 int GamePlayEngine::SpawnSnake(int size, int headx, int heady, char headdir, AITypes aiType)
 {
-	Snake *newSnake = new Snake();
-	snakes.PushBack(newSnake);
-	number_of_snakes += 1;
-	GetSnake(number_of_snakes - 1)->snake.Resize(size);
-	GetSnake(number_of_snakes - 1)->newdir = headdir;
-	GetSnake(number_of_snakes - 1)->aiType = aiType;
+	Snake* newSnake = snakesManager.NewSnake();
+	newSnake->newdir = headdir;
+	newSnake->aiType = aiType;
 	SnakeBlock sb = { headx, heady, headdir };
 	for (int i = 0; i < size; i++)
 	{
@@ -64,20 +61,20 @@ int GamePlayEngine::SpawnSnake(int size, int headx, int heady, char headdir, AIT
 		case LEFT: sb.x = headx + i; break;
 		case RIGHT: sb.x = headx - i; break;
 		}
-		*GetSnakeBlock(number_of_snakes - 1, i) = sb;
+		snakesManager.AddBlockToSnake(*number_of_snakes - 1, sb);
 		ChangeObject(sb.x, sb.y, SNAKE);
 	}
 
-	return number_of_snakes - 1;
+	return *number_of_snakes - 1;
 }
 
-void GamePlayEngine::SplitSnakes(int minLenghtToSplit, bool evolutionaryMode)
+void GamePlayEngine::SplitSnakes(int minLenghtToSplit)
 {
-	for (int i = 0; i < number_of_snakes; i++)
+	for (int i = 0; i < *number_of_snakes; i++)
 	{
-		if (((Snake*)snakes[i])->snake.Size() >= minLenghtToSplit)
+		if (snakesManager.snakes[i].bodySize >= minLenghtToSplit)
 		{
-			SplitSnake(i, evolutionaryMode);
+			SplitSnake(i);
 		}
 	}
 }
@@ -95,25 +92,25 @@ void GamePlayEngine::SpawnApple()
 
 void GamePlayEngine::DespawnSnake(int snake_id)
 {
-	if (number_of_snakes == 0 || snake_id > number_of_snakes)
+	if (*number_of_snakes == 0 || snake_id > *number_of_snakes)
 	{
 		return;
 	}
-	for (int i = 0; i < GetSnake(snake_id)->snake.Size(); i++)
+	for (int i = 0; i < snakesManager.snakes[snake_id].bodySize; i++)
 	{
-		ChangeObject(GetSnakeBlock(snake_id, i)->x, GetSnakeBlock(snake_id, i)->y, 0);
+		ChangeObject(snakesManager.snakes[snake_id].body[i].x, snakesManager.snakes[snake_id].body[i].y, 0);
 	}
-	snakes.Delete(snake_id);
-	number_of_snakes -= 1;
+	snakesManager.KillSnake(snake_id);
+	*number_of_snakes -= 1;
 }
 
 void GamePlayEngine::FeedSnake(int snake_id)
 {
-	if (number_of_snakes == 0 || snake_id > number_of_snakes)
+	if (*number_of_snakes == 0 || snake_id > *number_of_snakes)
 	{
 		return;
 	}
-	SnakeBlock sb = *GetSnakeBlock(snake_id, GetSnake(snake_id)->snake.Size() - 1);
+	SnakeBlock sb = snakesManager.snakes[snake_id].body[snakesManager.snakes[snake_id].bodySize - 1];
 	switch (sb.dir)
 	{
 	case UP: sb.y -= 1; break;
@@ -122,12 +119,12 @@ void GamePlayEngine::FeedSnake(int snake_id)
 	case RIGHT: sb.x -= 1; break;
 	}
 	ChangeObject(sb.x, sb.y, SNAKE);
-	GetSnake(snake_id)->snake.PushBack(&sb);
+	snakesManager.AddBlockToSnake(snake_id, sb);
 }
 
 void GamePlayEngine::ShortenSnake(int snake_id)
 {
-	if (number_of_snakes == 0 || snake_id > number_of_snakes)
+	if (*number_of_snakes == 0 || snake_id > *number_of_snakes)
 	{
 		return;
 	}
@@ -141,55 +138,43 @@ void GamePlayEngine::HandleSnakeAI(int snake_id)
 	{
 		for (int j = 0; j < SNAKE_FOV_WIDTH; j++)
 		{
-			switch (GetObjType( GetSnakeBlock(snake_id, 0)->x + j - SNAKE_FOV_WIDTH / 2, GetSnakeBlock(snake_id, 0)->y + i - SNAKE_FOV_HEIGHT / 2))
+			switch (GetObjType(snakesManager.snakes[snake_id].body[0].x + j - SNAKE_FOV_WIDTH / 2, snakesManager.snakes[snake_id].body[0].y + i - SNAKE_FOV_HEIGHT / 2))
 			{
-			case APPLE: resultingWeight = resultingWeight + GetSnake(snake_id)->foodWeights[SNAKE_FOV_HEIGHT - i - 1][j]; break;
-			case BARRIER: resultingWeight = resultingWeight + GetSnake(snake_id)->obstacleWeights[SNAKE_FOV_HEIGHT - i - 1][j]; break;
-			case SNAKE: resultingWeight = resultingWeight + GetSnake(snake_id)->obstacleWeights[SNAKE_FOV_HEIGHT - i - 1][j]; break;
+			case APPLE: resultingWeight = resultingWeight + foodWeights[SNAKE_FOV_HEIGHT - i - 1][j]; break;
+			case BARRIER: resultingWeight = resultingWeight + obstacleWeights[SNAKE_FOV_HEIGHT - i - 1][j]; break;
+			case SNAKE: resultingWeight = resultingWeight + obstacleWeights[SNAKE_FOV_HEIGHT - i - 1][j]; break;
 			}
 		}
 	}
 	ChangeSnakeDirection(snake_id, resultingWeight.GetDirection());
 }
 
-void GamePlayEngine::SplitSnake(int snake_id, bool evolutionaryMode)
+void GamePlayEngine::SplitSnake(int snake_id)
 {
-	snakes.PushBack(&Snake());
-	number_of_snakes += 1;	
-	GetSnake(number_of_snakes - 1)->aiType = GetSnake(snake_id)->aiType;
-	GetSnake(number_of_snakes - 1)->weightsWereChanged = GetSnake(snake_id)->weightsWereChanged;
-	for (int i = 0; i < SNAKE_FOV_HEIGHT; i++)
+	Snake* newSnake = snakesManager.NewSnake();
+	newSnake->aiType = snakesManager.snakes[snake_id].aiType;
+	newSnake->newdir = 0;
+	newSnake->texture = snakesManager.snakes[snake_id].texture;
+	int newSnakeSize = snakesManager.snakes[snake_id].bodySize / 2 - 1;
+	for (int i = 0; i < newSnakeSize; i++)
 	{
-		for (int j = 0; j < SNAKE_FOV_WIDTH; j++)
-		{
-			GetSnake(number_of_snakes - 1)->foodWeights[i][j] = GetSnake(snake_id)->foodWeights[i][j];
-			GetSnake(number_of_snakes - 1)->obstacleWeights[i][j] = GetSnake(snake_id)->obstacleWeights[i][j];
-		}
+		snakesManager.AddBlockToSnake(*number_of_snakes - 1, snakesManager.snakes[snake_id].body[newSnakeSize + i - 1]);
 	}
-	GetSnake(number_of_snakes - 1)->newdir = 0;
-	GetSnake(number_of_snakes - 1)->texture = GetSnake(snake_id)->texture;
-
-	GetSnake(number_of_snakes - 1)->snake.Resize(GetSnake(snake_id)->snake.Size() / 2 - 1);
-	for (int i = 0; i < ((Snake*)snakes[number_of_snakes - 1])->snake.Size(); i++)
-	{
-		*GetSnakeBlock(number_of_snakes - 1, i) = *GetSnakeBlock(snake_id, GetSnake(snake_id)->snake.Size() / 2 + i - 1);
-	}
-
-	GetSnake(snake_id)->snake.Delete( GetSnake(snake_id)->snake.Size() / 2, GetSnake(snake_id)->snake.Size() - 1);
+	snakesManager.CutTailOfSnake(snake_id, snakesManager.snakes[snake_id].bodySize / 2);
 }
 
 void GamePlayEngine::MoveSnakes()
 {
-	for (int i = 0; i < number_of_snakes; i++)
+	for (int i = 0; i < *number_of_snakes; i++)
 	{
-		if(((Snake*)snakes[i])->aiType != realPlayer) HandleSnakeAI(i);
+		if(snakesManager.snakes[i].aiType != realPlayer) HandleSnakeAI(i);
 	}
-	for (int i = 0; i < number_of_snakes; i++)
+	for (int i = 0; i < *number_of_snakes; i++)
 	{
-		int x = GetSnakeBlock(i, 0)->x;
-		int y = GetSnakeBlock(i, 0)->y;
-		GetSnakeBlock(i, 0)->dir = GetSnake(i)->newdir;
-		switch (GetSnakeBlock(i, 0)->dir)
+		int x = snakesManager.snakes[i].body[0].x;
+		int y = snakesManager.snakes[i].body[0].y;
+		snakesManager.snakes[i].body[0].dir = snakesManager.snakes[i].newdir;
+		switch (snakesManager.snakes[i].body[0].dir)
 		{
 		case UP: y += 1;  break;
 		case DOWN: y -= 1;  break;
@@ -201,55 +186,55 @@ void GamePlayEngine::MoveSnakes()
 		case BARRIER: DespawnSnake(i); i -= 1; continue; break;
 		case APPLE: FeedSnake(i); break;
 		}
-		size_t snakeAtiSize = GetSnake(i)->snake.Size();
-		ChangeObject(GetSnakeBlock(i, snakeAtiSize - 1)->x, GetSnakeBlock(i, snakeAtiSize - 1)->y, 0);
+		int snakeAtiSize = snakesManager.snakes[i].bodySize;
+		ChangeObject(snakesManager.snakes[i].body[snakeAtiSize - 1].x, snakesManager.snakes[i].body[snakeAtiSize - 1].y, 0);
 		ChangeObject(x, y, SNAKE);
 		for (int j = 0; j < snakeAtiSize; j++)
 		{
 			int id = (int)snakeAtiSize - j - 1;
-			switch (GetSnakeBlock(i, id)->dir)
+			switch (snakesManager.snakes[i].body[id].dir)
 			{
-			case UP: GetSnakeBlock(i, id)->y += 1; break;
-			case DOWN: GetSnakeBlock(i, id)->y -= 1; break;
-			case LEFT: GetSnakeBlock(i, id)->x -= 1; break;
-			case RIGHT: GetSnakeBlock(i, id)->x += 1;  break;
+			case UP: snakesManager.snakes[i].body[id].y += 1; break;
+			case DOWN: snakesManager.snakes[i].body[id].y -= 1; break;
+			case LEFT: snakesManager.snakes[i].body[id].x -= 1; break;
+			case RIGHT: snakesManager.snakes[i].body[id].x += 1;  break;
 			}
 			if (id >= 1)
 			{
-				GetSnakeBlock(i, id)->dir = GetSnakeBlock(i, id - 1)->dir;
+				snakesManager.snakes[i].body[id].dir = snakesManager.snakes[i].body[id - 1].dir;
 			}
 		}
 	}
 
 	// This this code checks if snakes collide with any other snakes and their own bodies
-	//std::vector<SnakeBlock> allSnakeBlocksWithoutHeads; // sorry for long name
-	DynamicArray allSnakeBlocksWithoutHeads(sizeof(SnakeBlock));
-	SnakeBlock *snakesHeads = new SnakeBlock[snakes.Size()];
-	for (int i = 0; i < number_of_snakes; i++)
+	SnakeBlock* allSnakeBlocksWithoutHeads; // sorry for long name
+	int allSnakeBlocksWithoutHeadsSize = 0;
+	for (int i = 0; i < *number_of_snakes; i++)
 	{
-		snakesHeads[i] = *GetSnakeBlock(i, 0);
-		size_t prevSize = allSnakeBlocksWithoutHeads.Size();
-		size_t snakeAtiSize = GetSnake(i)->snake.Size();
-		allSnakeBlocksWithoutHeads.Resize(allSnakeBlocksWithoutHeads.Size() + snakeAtiSize - 1);
-		for (int j = 1; j < snakeAtiSize; j++)
-		{
-			*(SnakeBlock*)allSnakeBlocksWithoutHeads[prevSize + j - 1] = *GetSnakeBlock(i, j);
-		}
+		allSnakeBlocksWithoutHeadsSize += snakesManager.snakes[i].bodySize;
 	}
-	size_t allSnakeBlocksWithoutHeadsSize = allSnakeBlocksWithoutHeads.Size();
-	for (int i = 0; i < number_of_snakes; i++)
+	allSnakeBlocksWithoutHeads = new SnakeBlock[allSnakeBlocksWithoutHeadsSize];
+	SnakeBlock *snakesHeads = new SnakeBlock[*number_of_snakes];
+	int prevSize = 0;
+	for (int i = 0; i < *number_of_snakes; i++)
 	{
-		size_t snakeAtiSize = GetSnake(i)->snake.Size();
-		for (int j = 0; j < number_of_snakes; j++)
+		snakesHeads[i] = snakesManager.snakes[i].body[0];
+		memcpy(allSnakeBlocksWithoutHeads + prevSize, snakesManager.snakes[i].body + 1, (snakesManager.snakes[i].bodySize - 1) * sizeof(SnakeBlock));
+		prevSize += snakesManager.snakes[i].bodySize;
+	}
+	for (int i = 0; i < *number_of_snakes; i++)
+	{
+		int snakeAtiSize = snakesManager.snakes[i].bodySize;
+		for (int j = 0; j < *number_of_snakes; j++)
 		{
 			// if i == j it means, that we try to compare snake's head with itself
 			if (i != j && snakeAtiSize > 0)
 			{
-				if (GetSnakeBlock(i, 0)->x == snakesHeads[j].x && GetSnakeBlock(i, 0)->y == snakesHeads[j].y)
+				if (snakesManager.snakes[i].body[0].x == snakesHeads[j].x && snakesManager.snakes[i].body[0].y == snakesHeads[j].y)
 				{
-					GetSnake(i)->snake.Clear(); // clear snake instead of Despawning it to keep this algorithm easy
-					snakeAtiSize = 0;
-					j = number_of_snakes;
+					
+					snakeAtiSize = 0; // set size of snake to 0 instead of Despawning it to keep this algorithm easy
+					j = *number_of_snakes;
 				}
 			}
 		}
@@ -257,19 +242,30 @@ void GamePlayEngine::MoveSnakes()
 		{
 			if (snakeAtiSize > 0)
 			{
-				if (GetSnakeBlock(i, 0)->x == ((SnakeBlock*)allSnakeBlocksWithoutHeads[j])->x && GetSnakeBlock(i, 0)->y == ((SnakeBlock*)allSnakeBlocksWithoutHeads[j])->y)
+				if (snakesManager.snakes[i].body[0].x == allSnakeBlocksWithoutHeads[j].x && snakesManager.snakes[i].body[0].y == allSnakeBlocksWithoutHeads[j].y)
 				{
-					GetSnake(i)->snake.Clear();
+					snakeAtiSize = 0;
 					j = allSnakeBlocksWithoutHeadsSize;
 				}
 			}
 		}
+		/* Clear physics from dead snake, because DespawnSnake() wont do it with bodySize set to 0 */
+		if (snakeAtiSize == 0)
+		{
+			for (int j = 0; j < snakesManager.snakes[i].bodySize; j++)
+			{
+				ChangeObject(snakesManager.snakes[i].body[j].x, snakesManager.snakes[i].body[j].y, 0);
+			}
+			snakesManager.snakes[i].bodySize = 0;
+		}
 	}
+	delete[] allSnakeBlocksWithoutHeads;
+	delete[] snakesHeads;
 
 	// delete all empty snakes
-	for (int i = 0; i < number_of_snakes; i++)
+	for (int i = 0; i < *number_of_snakes; i++)
 	{
-		if (GetSnake(i)->snake.Size() == 0)
+		if (snakesManager.snakes[i].bodySize == 0)
 		{
 			DespawnSnake(i);
 			i -= 1;
@@ -279,34 +275,44 @@ void GamePlayEngine::MoveSnakes()
 
 void GamePlayEngine::ChangeSnakeDirection(int snake_id, char dir)
 {
-	if (number_of_snakes == 0 || snake_id > number_of_snakes)
+	if (*number_of_snakes == 0 || snake_id > *number_of_snakes)
 	{
 		return;
 	}
-	if ((GetSnakeBlock(snake_id, 0)->dir == UP && dir == DOWN) || (GetSnakeBlock(snake_id, 0)->dir == DOWN && dir == UP) ||
-		(GetSnakeBlock(snake_id, 0)->dir == LEFT && dir == RIGHT) || (GetSnakeBlock(snake_id, 0)->dir == RIGHT && dir == LEFT))
+	if ((snakesManager.snakes[snake_id].body[0].dir == UP && dir == DOWN) || (snakesManager.snakes[snake_id].body[0].dir == DOWN && dir == UP) ||
+		(snakesManager.snakes[snake_id].body[0].dir == LEFT && dir == RIGHT) || (snakesManager.snakes[snake_id].body[0].dir == RIGHT && dir == LEFT))
 	{
 		return;
 	}
-	((Snake*)snakes[snake_id])->newdir = dir;
-}
-
-Snake * GamePlayEngine::GetSnake(int snake_id)
-{
-	return (Snake*)snakes.GetArray() + snake_id;
-}
-
-SnakeBlock * GamePlayEngine::GetSnakeBlock(int snake_id, int block_id)
-{
-	return (SnakeBlock*)GetSnake(snake_id)->snake.GetArray() + block_id;
+	snakesManager.snakes[snake_id].newdir = dir;
 }
 
 FrameRenderingInput GamePlayEngine::GetFrameRenderingInput()
 {
-	return { physics, physw, physh, &snakes };
+	FrameRenderingInput input;
+	input.physics = physics;
+	input.physicsWidth = physw;
+	input.physicsHeight = physh;
+	input.numberOfSnakes = *number_of_snakes;
+	input.snakes = new Snake[*number_of_snakes];
+	memcpy(input.snakes, snakesManager.snakes, *number_of_snakes * sizeof(Snake));
+	int sizeOfSnakesBodies = 0;
+	for (int i = 0; i < *number_of_snakes; i++)
+	{
+		sizeOfSnakesBodies += input.snakes[i].bodySize;
+	}
+	input.snakesBodies = new SnakeBlock[sizeOfSnakesBodies];
+	int prevSize = 0;
+	for (int i = 0; i < *number_of_snakes; i++)
+	{
+		memcpy(input.snakesBodies + prevSize, snakesManager.snakes[i].body, snakesManager.snakes[i].bodySize * sizeof(SnakeBlock));
+		input.snakes[i].body = input.snakesBodies + prevSize;
+		prevSize += snakesManager.snakes[i].bodySize;
+	}
+	return input;
 }
 
 int GamePlayEngine::GetNumberOfSnakes()
 {
-	return number_of_snakes;
+	return *number_of_snakes;
 }

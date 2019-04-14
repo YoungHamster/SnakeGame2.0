@@ -1,7 +1,5 @@
 #pragma once
 
-#include "DynamicArray.h"
-
 // Physical objects possible types
 #define NOTHING 0
 #define BARRIER 1
@@ -68,32 +66,13 @@ struct AIWeight
 
 struct Snake
 {
+	AITypes aiType;
 	int texture = -1;
 	char newdir = 0;
-	DynamicArray snake;
-	AITypes aiType;
-	bool weightsWereChanged = false;
-	AIWeight foodWeights[SNAKE_FOV_WIDTH][SNAKE_FOV_HEIGHT] = {
-	{ AIWeight(1, 0, 1, 0),  AIWeight(1, 0, 1, 0),   AIWeight(1, 0, 1, 0),   AIWeight(1, 0, 1, 0),   AIWeight(1, -1, 0, 0), AIWeight(1, 0, 0, 1),   AIWeight(1, 0, 0, 1),   AIWeight(1, 0, 0, 1),   AIWeight(1, 0, 0, 1) },
-	{ AIWeight(1, 0, 1, 0),  AIWeight(1, 0, 1, 0),   AIWeight(1, 0, 1, 0),   AIWeight(1, -1, 1, -1), AIWeight(2, -2, 0, 0), AIWeight(1, -1, -1, 1), AIWeight(1, 0, 0, 1),   AIWeight(1, 0, 0, 1),   AIWeight(1, 0, 0, 1) },
-	{ AIWeight(1, 0, 1, 0),  AIWeight(1, 0, 1, 0),   AIWeight(1, -1, 1, -1), AIWeight(2, -2, 2, -2), AIWeight(3, -3, 0, 0), AIWeight(2, -2, -2, 2), AIWeight(1, -1, -1, 1), AIWeight(1, 0, 0, 1),   AIWeight(1, 0, 0, 1) },
-	{ AIWeight(1, 0, 1, 0),  AIWeight(1, -1, 1, -1), AIWeight(2, -2, 2, -2), AIWeight(3, -3, 3, -3), AIWeight(4, -4, 0, 0), AIWeight(3, -3, -3, 3), AIWeight(2, -2, -2, 2), AIWeight(1, -1, -1, 1), AIWeight(1, 0, 0, 1) },
-	{ AIWeight(0, 0, 1, -1), AIWeight(0, 0, 2, -2),  AIWeight(0, 0, 3, -3),  AIWeight(0, 0, 4, -4),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, -4, 4),  AIWeight(0, 0, -3, 3),  AIWeight(0, 0, -2, 2),  AIWeight(0, 0, -1, 1) },
-	{ AIWeight(0, 1, 1, 0),  AIWeight(-1, 1, 1, -1), AIWeight(-2, 2, 2, -2), AIWeight(-3, 3, 3, -3), AIWeight(-4, 4, 0, 0), AIWeight(-3, 3, -3, 3), AIWeight(-2, 2, -2, 2), AIWeight(-1, 1, -1, 1), AIWeight(0, 1, 0, 1) },
-	{ AIWeight(0, 1, 1, 0),  AIWeight(0, 1, 1, 0),   AIWeight(-1, 1, 1, -1), AIWeight(-2, 2, 2, -2), AIWeight(-3, 3, 0, 0), AIWeight(-2, 2, -2, 2), AIWeight(-1, 1, -1, 1), AIWeight(0, 1, 0, 1),   AIWeight(0, 1, 0, 1) },
-	{ AIWeight(0, 1, 1, 0),  AIWeight(0, 1, 1, 0),   AIWeight(0, 1, 1, 0),   AIWeight(-1, 1, 1, -1), AIWeight(-2, 2, 0, 0), AIWeight(-1, 1, -1, 1), AIWeight(0, 1, 0, 1),   AIWeight(0, 1, 0, 1),   AIWeight(0, 1, 0, 1) },
-	{ AIWeight(0, 1, 1, 0),  AIWeight(0, 1, 1, 0),   AIWeight(0, 1, 1, 0),   AIWeight(0, 1, 1, 0),   AIWeight(-1, 1, 0, 0), AIWeight(0, 1, 0, 1),   AIWeight(0, 1, 0, 1),   AIWeight(0, 1, 0, 1),   AIWeight(0, 1, 0, 1) }
-	};
-	AIWeight obstacleWeights[SNAKE_FOV_WIDTH][SNAKE_FOV_HEIGHT] = {
-	{ AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(-1, 1, 1, 1), AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0) },
-	{ AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, -1, 0), AIWeight(-2, 2, 2, 2), AIWeight(0, 0, 0, -1), AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0) },
-	{ AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, -2, 0), AIWeight(-3, 3, 3, 3), AIWeight(0, 0, 0, -2), AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0) },
-	{ AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(3, 3, -3, 3), AIWeight(-4, 4, 4, 4), AIWeight(3, 3, 3, -3), AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0) },
-	{ AIWeight(1, 1, -1, 1), AIWeight(2, 2, -2, 2), AIWeight(3, 3, -3, 3), AIWeight(4, 4, -4, 4), AIWeight(0, 0, 0, 0),  AIWeight(4, 4, 4, -4), AIWeight(3, 3, 3, -3), AIWeight(2, 2, 2, -2), AIWeight(1, 1, 1, -1) },
-	{ AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(3, 3, -3, 3), AIWeight(4, -4, 4, 4), AIWeight(3, 3, 3, -3), AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0) },
-	{ AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, -2, 0), AIWeight(3, -3, 3, 3), AIWeight(0, 0, 0, -2), AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0) },
-	{ AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, -1, 0), AIWeight(2, -2, 2, 2), AIWeight(0, 0, 0, -1), AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0) },
-	{ AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(1, -1, 1, 1), AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0),  AIWeight(0, 0, 0, 0) }
-	};
-	Snake():snake(sizeof(SnakeBlock)){}
+	SnakeBlock* body = nullptr;
+	int bodySize = 0;
+	/* If body of snake becomes bigger, then supposed, 
+	snakes manager allocates new block of memory specifically for this snake and sets this parameter to false */
+	bool bodyAllocatedInCommonBuffer = true;
+	int sizeAllocatedForBody = 0;
 };

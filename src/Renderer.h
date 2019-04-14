@@ -2,13 +2,13 @@
 
 #include <Windows.h>
 #include <string>
+#include <vector>
 
 #include <d2d1.h>
 #include <wincodec.h>
 
 #include "GamePlayStructsAndDefines.h"
 #include "FrameRenderingInput.h"
-#include "CyclicBuffer.h"
 
 #define BITMAPSNUMBER 81
 #define SCREENWIDTH 1600
@@ -39,8 +39,6 @@ private:
 	ID2D1Bitmap* bitmaps[BITMAPSNUMBER];
 	std::vector<RendererErrors> rendererErrors;
 	D2D1::ColorF backgroundColor = { 0.8f, 0.5f, 0.5f };
-	CyclicBuffer renderingInputHistory;
-	CyclicBuffer translationHistory;
 	Camera camera;
 
 	void BeginDraw();
