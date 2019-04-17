@@ -7,7 +7,7 @@ class SnakesManager
 private:
 	SnakeBlock* snakesBodies = nullptr;
 public:
-	int numberOfUsedSnakes;
+	int numberOfUsedSnakes = 0;
 	int numberOfAllocatedSnakes;
 	int supposedMaxSizeOfSnakeBody;
 	Snake* snakes = nullptr;

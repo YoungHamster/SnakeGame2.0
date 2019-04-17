@@ -39,8 +39,8 @@ void ProcessInput();
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR cmd, int nCmdShow)
 {
 	Renderer renderer(hInstance, WindowProc, nCmdShow);
-	int physw = 80;
-	int physh = 45;
+	int physw = 320;
+	int physh = 180;
 	GamePlayEngine gamePlayEngine(physw, physh);
 	MSG msg;
 	msg.message = WM_NULL;
@@ -78,7 +78,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR cmd, in
 			if (gameRunning)
 			{
 				gamePlayEngine.MoveSnakes();
-				gamePlayEngine.SplitSnakes(10);
+				gamePlayEngine.SplitSnakes(6);
 				for (int i = 0; i < 70; i++)
 				{
 					gamePlayEngine.SpawnApple();

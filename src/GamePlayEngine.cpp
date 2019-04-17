@@ -94,7 +94,7 @@ void GamePlayEngine::DespawnSnake(int snake_id)
 {
 	if (*number_of_snakes == 0 || snake_id > *number_of_snakes)
 	{
-		return;
+		__debugbreak();
 	}
 	for (int i = 0; i < snakesManager.snakes[snake_id].bodySize; i++)
 	{
@@ -107,7 +107,7 @@ void GamePlayEngine::FeedSnake(int snake_id)
 {
 	if (*number_of_snakes == 0 || snake_id > *number_of_snakes)
 	{
-		return;
+		__debugbreak();
 	}
 	SnakeBlock sb = snakesManager.snakes[snake_id].body[snakesManager.snakes[snake_id].bodySize - 1];
 	switch (sb.dir)
@@ -125,7 +125,7 @@ void GamePlayEngine::ShortenSnake(int snake_id)
 {
 	if (*number_of_snakes == 0 || snake_id > *number_of_snakes)
 	{
-		return;
+		__debugbreak();
 	}
 	// TODO
 }
@@ -219,30 +219,37 @@ void GamePlayEngine::MoveSnakes()
 			{
 				if (i != j || k != 0)
 				{
-					if (snakesManager.snakes[i].body[0].x == snakesManager.snakes[j].body[k].x && snakesManager.snakes[i].body[0].y == snakesManager.snakes[j].body[k].y)
+					if (snakesManager.snakes[i].body[0].x == snakesManager.snakes[j].body[k].x
+						&& snakesManager.snakes[i].body[0].y == snakesManager.snakes[j].body[k].y)
 					{
 						isSnakeDead[i] = true;
+						k = snakesManager.snakes[j].bodySize;
+						j = *number_of_snakes;
 					}
 				}
 			}
 		}
 	}
 
+	// offset caused by deleting snakes and not deleting values from isSnakeDead array
+	int offset = 0;
 	for (int i = 0; i < *number_of_snakes; i++)
 	{
-		if (isSnakeDead[i])
+		if (isSnakeDead[i + offset])
 		{
 			DespawnSnake(i);
 			i -= 1;
+			offset += 1;
 		}
 	}
+	delete[] isSnakeDead;
 }
 
 void GamePlayEngine::ChangeSnakeDirection(int snake_id, char dir)
 {
 	if (*number_of_snakes == 0 || snake_id > *number_of_snakes)
 	{
-		return;
+		__debugbreak();
 	}
 	if ((snakesManager.snakes[snake_id].body[0].dir == UP && dir == DOWN) || (snakesManager.snakes[snake_id].body[0].dir == DOWN && dir == UP) ||
 		(snakesManager.snakes[snake_id].body[0].dir == LEFT && dir == RIGHT) || (snakesManager.snakes[snake_id].body[0].dir == RIGHT && dir == LEFT))
