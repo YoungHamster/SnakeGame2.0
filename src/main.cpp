@@ -4,6 +4,7 @@
 
 #include "Renderer.h"
 #include "GamePlayEngine.h"
+#include "Console.h"
 
 #define W 0x57
 #define A 0x41
@@ -38,6 +39,9 @@ void ProcessInput();
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR cmd, int nCmdShow)
 {
+	CreateConsole();
+	std::cout << "Hello world!" << std::endl;
+
 	Renderer renderer(hInstance, WindowProc, nCmdShow);
 	int physw = 320;
 	int physh = 180;
