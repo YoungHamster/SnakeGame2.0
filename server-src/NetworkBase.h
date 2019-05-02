@@ -49,15 +49,18 @@ constexpr int PROTOCOLID = 139012;
 /* standard offsets in every packet to send and receive */
 enum PacketOffsets
 {
-	protocolID = 0,
-	packetID = 4,
-	connectionUID = 5
+	PROTOCOLIDOFFSET = 0,
+	PACKETIDOFFSET = 4,
+	CONNECTIONUIDOFFSET = 5,
+	PACKETNUMBEROFFSET = 13,
+	DATAOFFSET = 17
 };
 
 /* standard ids, that define reaction on packet */
 enum PacketsIDs
 {
-	newConnection = 0x01,
-	ping = 0x02,
-	disconnect = 0xff
+	NEWCONNECTION = 0x01,
+	PING = 0x02,
+	GAMEDATA = 0x03,
+	DISCONNECT = 0xff
 };

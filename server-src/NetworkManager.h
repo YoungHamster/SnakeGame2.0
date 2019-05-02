@@ -1,6 +1,7 @@
 #pragma once
 #include <mutex>
 
+#include "AsyncArray.h"
 #include "NetworkBase.h"
 
 class NetworkManager

@@ -50,7 +50,7 @@ NetworkManager::~NetworkManager()
 
 bool NetworkManager::SendPacket(const char* packet, int packet_size, sockaddr_in address)
 {
-	*(int*)& packet[protocolID] = PROTOCOLID;
+	*(int*)& packet[PROTOCOLIDOFFSET] = PROTOCOLID;
 	int sent_bytes = sendto(sock, packet, packet_size, 0, (sockaddr*)& address, sizeof(sockaddr_in));
 
 	if (sent_bytes != packet_size)
@@ -63,7 +63,7 @@ bool NetworkManager::SendPacket(const char* packet, int packet_size, sockaddr_in
 
 bool NetworkManager::SendPacket(const char* packet, int packet_size, unsigned long long connectionUId)
 {
-	unsigned long long* connId = (unsigned long long*)&packet[connectionUID];
+	unsigned long long* connId = (unsigned long long*)&packet[CONNECTIONUIDOFFSET];
 	*connId = connectionUId;
 	lock.lock();
 	sockaddr_in addr = GetConnectionByUId(connectionUId).address.GetSockaddr();
@@ -91,20 +91,20 @@ bool NetworkManager::RecvPacket()
 	sockaddr_in from;
 	int fromsize = sizeof(from);
 	int recvSize = recvfrom(sock, newPacketBuffer, maxPacketSize, 0, (sockaddr*)& from, &fromsize);
-	if (recvSize > 0 && *(int*)newPacketBuffer[protocolID] == PROTOCOLID)
+	if (recvSize > 0 && *(int*)newPacketBuffer[PROTOCOLIDOFFSET] == PROTOCOLID)
 	{
 		char* data = new char[recvSize];
 		memcpy(data, newPacketBuffer, recvSize);
 
 		/* Accept the incoming connection */
-		if (data[packetID] == newConnection)
+		if (data[PACKETIDOFFSET] == NEWCONNECTION)
 		{
 			lock.lock();
 			incomingConnections.push_back({ from, recvSize, data, clock() });
 			lock.unlock();
 			return true;
 		}
-		int* connectionId = (int*)&data[connectionUID];
+		int* connectionId = (int*)&data[CONNECTIONUIDOFFSET];
 		lock.lock();
 		connections[*connectionId].packets.push_back({ from, recvSize, data, clock() });
 		lock.unlock();

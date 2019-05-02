@@ -34,13 +34,11 @@ int main()
 	std::thread recvPacketsThr(RecvPackets, &net);
 	recvPacketsThr.detach();
 	acceptConnectionsThr.detach();
-	std::cout << sizeof(PacketOffsets) << std::endl;
-	std::cout << sizeof(PacketsIDs) << std::endl;
 	while (true)
 	{
 		//net.AcceptConnection();
 		//net.RecvPacket();
-		gamePlayEngine.MoveSnakes();
+		gamePlayEngine.GameTick();
 		
 		Sleep(1);
 	}
