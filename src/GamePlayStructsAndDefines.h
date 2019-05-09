@@ -21,13 +21,13 @@ enum AITypes
 
 struct PhysicalObject
 {
-	int type = 0;
+	char type = 0;
 };
 
 struct SnakeBlock
 {
-	int x;
-	int y;
+	short x;
+	short y;
 	char dir;
 };
 

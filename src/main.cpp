@@ -14,7 +14,7 @@
 auto starttime = std::chrono::high_resolution_clock::now();\
  x;\
 auto endtime = std::chrono::high_resolution_clock::now();\
-if(std::chrono::duration_cast<std::chrono::milliseconds>(endtime - starttime).count() > 0)\
+if(std::chrono::duration_cast<std::chrono::nanoseconds>(endtime - starttime).count() > 0)\
 {\
 	AllocConsole(); \
 	HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE); \
@@ -43,16 +43,15 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR cmd, in
 	std::cout << "Hello world!" << std::endl;
 
 	Renderer renderer(hInstance, WindowProc, nCmdShow);
-	int physw = 320;
-	int physh = 180;
+	int physw = 48;
+	int physh = 27;
 	GamePlayEngine gamePlayEngine(physw, physh);
 	MSG msg;
 	msg.message = WM_NULL;
 
 	int newSnakey = 0;
 	int lastTickTime = 0;
-	bool gameRunning = false;
-	int appleSpawnCounter = 5;
+	bool gameRunning = true;
 	while (programRunning)
 	{
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
@@ -69,27 +68,31 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR cmd, in
 				case A: gamePlayEngine.ChangeSnakeDirection(0, LEFT); break;
 				case S: gamePlayEngine.ChangeSnakeDirection(0, DOWN); break;
 				case D: gamePlayEngine.ChangeSnakeDirection(0, RIGHT); break;
-				case VK_RETURN: gameRunning = !gameRunning;	break;
+				case VK_ESCAPE: gameRunning = !gameRunning;	break;
 				case VK_F1:
 					gamePlayEngine.SpawnSnake(3, physw / 2, (newSnakey % (physh - 2)) + 1, LEFT, ai);
 					newSnakey += 1;
 					break;
-				case VK_F5: gamePlayEngine.MoveSnakes(); break;
-				case VK_F2: gamePlayEngine.dbgGetObject(); break;
 				}
 				inputBuffer.erase(inputBuffer.begin());
 			}
-			if (gameRunning)
+			if (gameRunning && clock() - lastTickTime >= 80)
 			{
-				gamePlayEngine.MoveSnakes();
-				gamePlayEngine.SplitSnakes(6);
-				for (int i = 0; i < 70; i++)
+				lastTickTime = clock();
+				if (!gamePlayEngine.IsAnyPlayerAlive())
 				{
-					gamePlayEngine.SpawnApple();
+					lastTickTime += 1000;
+					gamePlayEngine.KillAllSnakes();
+					gamePlayEngine.SpawnSnake(3, 30, 10, LEFT, realPlayer);
+					gamePlayEngine.SpawnSnake(3, 30, 13, LEFT, ai);
+					gamePlayEngine.SpawnSnake(3, 30, 16, LEFT, ai);
+					gamePlayEngine.SpawnSnake(3, 30, 19, LEFT, ai);
 				}
+				gamePlayEngine.MoveSnakes();
+				gamePlayEngine.SpawnApple();
 			}
-			renderer.RenderFrame(gamePlayEngine.GetFrameRenderingInput());
-			Sleep(1);
+			COUNTEXECUTIONTIME(renderer.RenderFrame(gamePlayEngine.GetFrameRenderingInput()));
+			Sleep(2);
 		}
 	}
 

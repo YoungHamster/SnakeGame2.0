@@ -17,7 +17,6 @@ void CreateConsole()
 	fp = _fdopen(hConsole, "w");
 
 	freopen_s(&fp, "CONOUT$", "w", stdout);
-	std::cout << "Windows 10" << std::endl;
 }
 
 void DeleteConsole()

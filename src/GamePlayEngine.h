@@ -53,8 +53,12 @@ public:
 	void MoveSnakes();
 	void ChangeSnakeDirection(int snake_id, char dir);
 
+	bool IsAnyPlayerAlive();
+	void KillAllSnakes();
+
 	void dbgGetObject();
 
 	FrameRenderingInput GetFrameRenderingInput();
 	int GetNumberOfSnakes();
+	int GetNumberOfSnakeBlocks();
 };

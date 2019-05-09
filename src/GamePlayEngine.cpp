@@ -259,6 +259,27 @@ void GamePlayEngine::ChangeSnakeDirection(int snake_id, char dir)
 	snakesManager.snakes[snake_id].newdir = dir;
 }
 
+bool GamePlayEngine::IsAnyPlayerAlive()
+{
+	for (int i = 0; i < *number_of_snakes; i++)
+	{
+		if (snakesManager.snakes[i].aiType == realPlayer)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+void GamePlayEngine::KillAllSnakes()
+{
+	for (int i = 0; i < *number_of_snakes; i++)
+	{
+		DespawnSnake(i);
+		i -= 1;
+	}
+}
+
 void GamePlayEngine::dbgGetObject()
 {
 	for (int i = 1; i < physh - 1; i++)
@@ -284,4 +305,14 @@ FrameRenderingInput GamePlayEngine::GetFrameRenderingInput()
 int GamePlayEngine::GetNumberOfSnakes()
 {
 	return *number_of_snakes;
+}
+
+int GamePlayEngine::GetNumberOfSnakeBlocks()
+{
+	int numberOfSnakeBlocks = 0;
+	for (int i = 0; i < *number_of_snakes; i++)
+	{
+		numberOfSnakeBlocks += snakesManager.snakes[i].bodySize;
+	}
+	return numberOfSnakeBlocks;
 }
