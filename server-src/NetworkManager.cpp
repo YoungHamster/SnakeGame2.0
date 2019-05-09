@@ -34,16 +34,12 @@ NetworkManager::NetworkManager(unsigned short port)
 		std::cout << "failed to set non-blocking socket\n";
 		__debugbreak();
 	}
-
-	newPacketBuffer = new char[maxPacketSize];
-	connections = new Connection[maxNumberOfConnections];
 }
 
 NetworkManager::~NetworkManager()
 {
 	networkManagerWorking = false;
-	delete[] newPacketBuffer;
-	newPacketBuffer = nullptr;
+	delete[] connections;
 	closesocket(sock);
 	WSACleanup();
 }
@@ -65,13 +61,11 @@ bool NetworkManager::SendPacket(const char* packet, int packet_size, unsigned lo
 {
 	unsigned long long* connId = (unsigned long long*)&packet[CONNECTIONUIDOFFSET];
 	*connId = connectionUId;
-	lock.lock();
-	sockaddr_in addr = GetConnectionByUId(connectionUId).address.GetSockaddr();
-	lock.unlock();
+	sockaddr_in addr = GetConnectionByUId(connectionUId)->address.GetSockaddr();
 	return SendPacket(packet, packet_size, addr);
 }
 
-Connection NetworkManager::GetConnectionByUId(unsigned long long connectionUId)
+Connection* NetworkManager::GetConnectionByUId(unsigned long long connectionUId)
 {
 	lock.lock();
 	for (int i = 0; i < numberOfActiveConnections; i++)
@@ -79,11 +73,11 @@ Connection NetworkManager::GetConnectionByUId(unsigned long long connectionUId)
 		if (connections[numberOfActiveConnections].connectionUId == connectionUId)
 		{
 			lock.unlock();
-			return connections[numberOfActiveConnections];
+			return &connections[numberOfActiveConnections];
 		}
 	}
 	lock.unlock();
-	return Connection();
+	return nullptr;
 }
 
 bool NetworkManager::RecvPacket()
@@ -91,7 +85,7 @@ bool NetworkManager::RecvPacket()
 	sockaddr_in from;
 	int fromsize = sizeof(from);
 	int recvSize = recvfrom(sock, newPacketBuffer, maxPacketSize, 0, (sockaddr*)& from, &fromsize);
-	if (recvSize > 0 && *(int*)newPacketBuffer[PROTOCOLIDOFFSET] == PROTOCOLID)
+	if (recvSize > 0 && *(int*)newPacketBuffer[PROTOCOLIDOFFSET] == PROTOCOLID && *(int*)newPacketBuffer[PACKETSIZEOFFSET] == recvSize)
 	{
 		char* data = new char[recvSize];
 		memcpy(data, newPacketBuffer, recvSize);
@@ -104,10 +98,9 @@ bool NetworkManager::RecvPacket()
 			lock.unlock();
 			return true;
 		}
-		int* connectionId = (int*)&data[CONNECTIONUIDOFFSET];
-		lock.lock();
-		connections[*connectionId].packets.push_back({ from, recvSize, data, clock() });
-		lock.unlock();
+		unsigned long long connectionUId = *(unsigned long long*)&data[CONNECTIONUIDOFFSET];
+		/* not really thread safe */GetConnectionByUId(connectionUId)->packets.push_back({ from, recvSize, data, clock() });
+		/* because other thread can get connection pointer and use it without lock */
 		return true;
 	}
 	return false;

@@ -4,6 +4,7 @@
 #include "AsyncArray.h"
 #include "NetworkBase.h"
 
+/* May be big object, don't create on stack */
 class NetworkManager
 {
 private:
@@ -11,19 +12,19 @@ private:
 
 	SOCKET sock = 0;
 	std::vector<Packet> incomingConnections;
-	Connection* connections;
 	int numberOfActiveConnections = 0;
-	int maxNumberOfConnections = 1000;
+	static const int maxNumberOfConnections = 1000;
+	Connection connections[maxNumberOfConnections];
 
 	unsigned long long newConnectionUId = 0;
 
-	const int maxPacketSize = 10000;
-	char* newPacketBuffer = nullptr;
+	public:static const int maxPacketSize = 10000;
+private:
+	char newPacketBuffer[maxPacketSize];
 
 	bool networkManagerWorking = true;
 
 	bool SendPacket(const char* packet, int packet_size, sockaddr_in address);
-	Connection GetConnectionByUId(unsigned long long connectionUId);
 public:
 	NetworkManager(unsigned short port);
 	~NetworkManager();
@@ -31,4 +32,5 @@ public:
 	bool RecvPacket();
 	bool AcceptConnection();
 	void Disconnect(unsigned long long connectionUId);
+	Connection* GetConnectionByUId(unsigned long long connectionUId);
 };

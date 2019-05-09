@@ -1,8 +1,7 @@
 #include <thread>
 #include <iostream>
 
-#include "GamePlayEngine_server.h"
-#include "NetworkManager.h"
+#include "GameRoom.h"
 #include "ConsoleManager.h"
 
 static bool serverRunning = true;
@@ -27,19 +26,16 @@ void RecvPackets(NetworkManager* net)
 
 int main()
 {
-	NetworkManager net(50001);
-	GamePlayEngine_server gamePlayEngine(64, 36);
+	NetworkManager* net = new NetworkManager(50001);
+	GameRoom* gameRoom = new GameRoom(net, 64, 36);
 	ConsoleManager consoleManager;
-	std::thread acceptConnectionsThr(AcceptConnections, &net);
-	std::thread recvPacketsThr(RecvPackets, &net);
+	std::thread acceptConnectionsThr(AcceptConnections, net);
+	std::thread recvPacketsThr(RecvPackets, net);
 	recvPacketsThr.detach();
 	acceptConnectionsThr.detach();
 	while (true)
 	{
-		//net.AcceptConnection();
-		//net.RecvPacket();
-		gamePlayEngine.GameTick();
-		
+		gameRoom->Tick();
 		Sleep(1);
 	}
 	return 0;

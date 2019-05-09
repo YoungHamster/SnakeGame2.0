@@ -1,19 +1,30 @@
 #include "GameRoom.h"
 
-void GameRoom::MovePlayers()
-{
-	gamePlayEngine.GameTick();
-	for (int i = 0; i < players.size(); i++)
-	{
-
-	}
-}
-
 void GameRoom::HandlePlayersInput()
 {
 	for (int i = 0; i < players.size(); i++)
 	{
-		
+		Connection* conn = net->GetConnectionByUId(players[i].connectionUID);
+		for (int j = 0; j < conn->packets.size(); j++)
+		{
+			if (clock() - conn->packets[j].arriveTime >= gameTickPeriod * 2)
+			{
+				conn->packets.erase(conn->packets.begin() + j);
+				j -= 1;
+				continue;
+			}
+			switch (conn->packets[j].data[PACKETIDOFFSET])
+			{
+			case NEWCONNECTION: break;
+			case PING: break;
+			case GAMEDATA: break;
+			case DISCONNECT: 
+				net->Disconnect(players[i].connectionUID); 
+				players.erase(players.begin() + i); 
+				i -= 1; 
+				break;
+			}
+		}
 	}
 }
 
@@ -59,11 +70,20 @@ void GameRoom::SendGameDataToPlayers()
 	delete[] gameData;
 }
 
+GameRoom::GameRoom(NetworkManager* net, int physw, int physh)
+	:net(net), gamePlayEngine(physw, physh){}
+
 void GameRoom::Tick()
 {
+	HandlePlayersInput();
 	switch (state)
 	{
 	case game:
+		if (clock() - lastGameTickTime > gameTickPeriod)
+		{
+			gamePlayEngine.GameTick();
+		}
+		SendGameDataToPlayers();
 		break;
 	case pauseGame:
 		break;

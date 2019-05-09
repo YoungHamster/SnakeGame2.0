@@ -6,7 +6,7 @@
 
 struct ComperessedSnake
 {
-	unsigned int bodyOffset = 0; // CompressedSnakeBlocks of this snake offset from snakesBodiesOffset
+	unsigned int bodyOffset = 0; // SnakeBlocks of this snake offset from snakesBodiesOffset
 	short bodySize = 0;
 };
 
@@ -14,7 +14,7 @@ struct GameData
 {
 	unsigned int snakesOffset; // ComperessedSnakes offset in bytes from the beginning of game data in packet
 	short numberOfSnakes;
-	unsigned int snakesBodiesOffset; // CompressedSnakeBlocks offset in bytes from the beginning of game data in packet
+	unsigned int snakesBodiesOffset; // SnakeBlocks offset in bytes from the beginning of game data in packet
 };
 
 class GamePlayEngine_server

@@ -259,6 +259,10 @@ void GamePlayEngine_server::ChangeSnakeDirection(int snake_id, char dir)
 	snakesManager.snakes[snake_id].newdir = dir;
 }
 
+void GamePlayEngine_server::GameTick()
+{
+}
+
 bool GamePlayEngine_server::IsAnyPlayerAlive()
 {
 	for (int i = 0; i < *number_of_snakes; i++)
@@ -291,15 +295,16 @@ char* GamePlayEngine_server::GetGameData(int* dataSize)
 	unsigned int bodyOffset = 0;
 	for (int i = 0; i < *number_of_snakes; i++)
 	{
-		snake = { bodyOffset, snakesManager.snakes[i].bodySize };
+		snake = { bodyOffset, (short)snakesManager.snakes[i].bodySize };
 		*(ComperessedSnake*)& data[gameData.snakesOffset + i * sizeof(ComperessedSnake)] = snake;
 		for (int j = 0; j < snakesManager.snakes[i].bodySize; j++)
 		{
-			snakeBlock = { snakesManager.snakes[i].body[j].x, snakesManager.snakes[i].body[j].y, snakesManager.snakes[i].body[j].dir };
+			snakeBlock =  snakesManager.snakes[i].body[j];
 			*(SnakeBlock*)& data[gameData.snakesBodiesOffset + bodyOffset + j * sizeof(SnakeBlock)] = snakeBlock;
 		}
 		bodyOffset += snakesManager.snakes[i].bodySize * sizeof(SnakeBlock);
 	}
+	return data;
 }
 
 int GamePlayEngine_server::GetNumberOfSnakes()
