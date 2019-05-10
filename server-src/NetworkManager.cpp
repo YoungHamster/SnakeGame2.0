@@ -43,12 +43,12 @@ NetworkManager::~NetworkManager()
 	WSACleanup();
 }
 
-bool NetworkManager::SendPacket(const char* packet, int packet_size, sockaddr_in address)
+bool NetworkManager::SendPacket(const char* packet, int packetSize, sockaddr_in address)
 {
 	*(int*)& packet[PROTOCOLIDOFFSET] = PROTOCOLID;
-	int sent_bytes = sendto(sock, packet, packet_size, 0, (sockaddr*)& address, sizeof(sockaddr_in));
+	int sent_bytes = sendto(sock, packet, packetSize, 0, (sockaddr*)& address, sizeof(sockaddr_in));
 
-	if (sent_bytes != packet_size)
+	if (sent_bytes != packetSize)
 	{
 		std::cout << "failed to send packet: return value = " << sent_bytes << std::endl;
 		return false;
@@ -56,17 +56,24 @@ bool NetworkManager::SendPacket(const char* packet, int packet_size, sockaddr_in
 	return true;
 }
 
-bool NetworkManager::SendPacket(const char* packet, int packet_size, unsigned long long connectionUId)
+bool NetworkManager::SendPacket(const char* packet, int packetSize, unsigned long long connectionUId)
 {
 	unsigned long long* connId = (unsigned long long*)&packet[CONNECTIONUIDOFFSET];
 	*connId = connectionUId;
 	sockaddr_in addr = GetConnectionByUId(connectionUId)->address.GetSockaddr();
-	return SendPacket(packet, packet_size, addr);
+	return SendPacket(packet, packetSize, addr);
+}
+
+bool NetworkManager::SendPacket(const char* packet, unsigned int packetSize, unsigned long long connectionUId, unsigned char packetId, unsigned int packetNumber)
+{
+	*(unsigned char*)& packet[PACKETIDOFFSET] = packetId;
+	*(unsigned int*)& packet[PACKETNUMBEROFFSET] = packetNumber;
+	return SendPacket(packet, packetSize, connectionUId);
 }
 
 Connection* NetworkManager::GetConnectionByUId(unsigned long long connectionUId)
 {
-	for (int i = 0; i < numberOfActiveConnections; i++)
+	for (int i = 0; i < maxNumberOfConnections; i++)
 	{
 		connections[i].lock.lock();
 		if (connections[i].connectionUId == connectionUId)
@@ -83,11 +90,11 @@ bool NetworkManager::RecvPacket()
 {
 	sockaddr_in from;
 	int fromsize = sizeof(from);
-	int recvSize = recvfrom(sock, newPacketBuffer, maxPacketSize, 0, (sockaddr*)& from, &fromsize);
-	if (recvSize > 0 && *(int*)newPacketBuffer[PROTOCOLIDOFFSET] == PROTOCOLID && *(int*)newPacketBuffer[PACKETSIZEOFFSET] == recvSize)
+	int recvSize = recvfrom(sock, recvPacketBuffer, maxPacketSize, 0, (sockaddr*)& from, &fromsize);
+	if (recvSize > 0 && *(int*)recvPacketBuffer[PROTOCOLIDOFFSET] == PROTOCOLID && *(int*)recvPacketBuffer[PACKETSIZEOFFSET] == recvSize)
 	{
 		char* data = new char[recvSize];
-		memcpy(data, newPacketBuffer, recvSize);
+		memcpy(data, recvPacketBuffer, recvSize);
 
 		/* Accept the incoming connection */
 		if (data[PACKETIDOFFSET] == NEWCONNECTION)
@@ -121,8 +128,22 @@ bool NetworkManager::AcceptConnection()
 		/* protocoluid(int) + connection accepted/rejected(bool) + connectionuid(ull) */
 		char* buff = new char[sizeof(int) + sizeof(char) + sizeof(unsigned long long)];
 		
+		/* find not active connection for new connection */
+		int newConnectionId = -1;
+		for(int i = 0; i < maxNumberOfConnections; i++)
+		{
+			connections[i].lock.lock();
+			if (!connections[i].active)
+			{
+				newConnectionId = i;
+				connections[i].active = true;
+				i = maxNumberOfConnections;
+			}
+			connections[i].lock.unlock();
+		}
+
 		/* Not using offsets from enum PacketOffsets, because it is not usual packet */
-		buff[sizeof(int)] = (char)!(numberOfActiveConnections == maxNumberOfConnections);
+		buff[sizeof(int)] = (char)!(newConnectionId == -1);
 		if (buff[sizeof(int)])
 		{
 			connections[numberOfActiveConnections].lock.lock();
@@ -149,5 +170,7 @@ bool NetworkManager::AcceptConnection()
 
 void NetworkManager::Disconnect(unsigned long long connectionUId)
 {
-
+	char packet[DATAOFFSET];
+	SendPacket(packet, DATAOFFSET, connectionUId, DISCONNECT, 0);
+	GetConnectionByUId(connectionUId)->active = false;
 }

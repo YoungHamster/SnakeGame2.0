@@ -5,6 +5,7 @@
 
 #include <chrono>
 #include <vector>
+#include <mutex>
 
 class Address
 {
@@ -38,6 +39,7 @@ struct Packet
 
 struct Connection
 {
+	bool active;
 	Address address;
 	unsigned long long connectionUId = 0;
 	clock_t lastPingPacketTime = 0;
@@ -52,14 +54,14 @@ constexpr int PROTOCOLID = 139012;
 enum PacketOffsets
 {
 	PROTOCOLIDOFFSET = 0,
-	PACKETSIZEOFFSET = 4,
-	PACKETIDOFFSET = 8,
-	CONNECTIONUIDOFFSET = 9,
-	PACKETNUMBEROFFSET = 17,
+	PACKETSIZEOFFSET = 4, // packetsize-4byte unsigned int
+	PACKETIDOFFSET = 8, // packetid-4byte unsigned char
+	CONNECTIONUIDOFFSET = 9,// connectionuid-8byte unsigned int(unsigned long long)
+	PACKETNUMBEROFFSET = 17,// packetnumber-4byte unsigned int
 	DATAOFFSET = 21
 };
 
-/* standard ids, that define reaction on packet */
+/* standard ids, that define how to handle packet */
 enum PacketsIDs
 {
 	NEWCONNECTION = 0x01,

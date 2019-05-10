@@ -39,7 +39,7 @@ private:
 	clock_t lastGameTickTime = 0;
 	int gameTickPeriod = 100;
 
-	char newPacketBuffer[NetworkManager::maxPacketSize];
+	char sendPacketBuffer[NetworkManager::maxPacketSize];
 
 	void HandlePlayersInput();
 	void StartGame();

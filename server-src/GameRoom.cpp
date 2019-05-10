@@ -62,15 +62,12 @@ void GameRoom::SendGameDataToPlayers()
 		packetsSizes[i] = i < (numberOfPackets - 1) ? (1300 - DATAOFFSET) : gameDataSize % (1300 - DATAOFFSET);
 	}
 
-	char packet[1300];
-	*(int*)&packet[PACKETIDOFFSET] = GAMEDATA;
 	for (int i = 0; i < players.size(); i++)
 	{
 		for (int j = 0; j < numberOfPackets; j++)
 		{
-			memcpy(&packet[DATAOFFSET], &gameData[j * (1300 - DATAOFFSET)], packetsSizes[j]);
-			*(int*)& packet[PACKETNUMBEROFFSET] = j;
-			net->SendPacket(packet, packetsSizes[j] + DATAOFFSET, players[i].connectionUID);
+			memcpy(&sendPacketBuffer[DATAOFFSET], &gameData[j * (1300 - DATAOFFSET)], packetsSizes[j]);
+			net->SendPacket(sendPacketBuffer, packetsSizes[j] + DATAOFFSET, players[i].connectionUID, GAMEDATA, (unsigned int)j);
 		}
 	}
 	delete[] packetsSizes;

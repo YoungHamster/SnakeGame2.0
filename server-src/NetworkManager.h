@@ -1,5 +1,4 @@
 #pragma once
-#include <mutex>
 
 #include "AsyncArray.h"
 #include "NetworkBase.h"
@@ -19,17 +18,18 @@ private:
 
 	unsigned long long newConnectionUId = 0;
 
-	public:static const int maxPacketSize = 10000;
+	public:static const int maxPacketSize = 1300;
 private:
-	char newPacketBuffer[maxPacketSize];
+	char recvPacketBuffer[maxPacketSize];
 
 	bool networkManagerWorking = true;
 
-	bool SendPacket(const char* packet, int packet_size, sockaddr_in address);
+	bool SendPacket(const char* packet, int packetSize, sockaddr_in address);
 public:
 	NetworkManager(unsigned short port);
 	~NetworkManager();
-	bool SendPacket(const char* packet, int packet_size, unsigned long long connectionUId);
+	bool SendPacket(const char* packet, int packetSize, unsigned long long connectionUId);
+	bool SendPacket(const char* packet, unsigned int packetSize, unsigned long long connectionUId, unsigned char packetId, unsigned int packetNumber);
 	bool RecvPacket();
 	bool AcceptConnection();
 	void Disconnect(unsigned long long connectionUId);
