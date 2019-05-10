@@ -5,6 +5,13 @@ void GameRoom::HandlePlayersInput()
 	for (int i = 0; i < players.size(); i++)
 	{
 		Connection* conn = net->GetConnectionByUId(players[i].connectionUID);
+		if (conn == nullptr)
+		{
+			players.erase(players.begin() + i);
+			i -= 1;
+			continue;
+		}
+		conn->lock.lock();
 		for (int j = 0; j < conn->packets.size(); j++)
 		{
 			if (clock() - conn->packets[j].arriveTime >= gameTickPeriod * 2)
@@ -15,7 +22,6 @@ void GameRoom::HandlePlayersInput()
 			}
 			switch (conn->packets[j].data[PACKETIDOFFSET])
 			{
-			case NEWCONNECTION: break;
 			case PING: break;
 			case GAMEDATA: break;
 			case DISCONNECT: 
@@ -25,6 +31,7 @@ void GameRoom::HandlePlayersInput()
 				break;
 			}
 		}
+		conn->lock.unlock();
 	}
 }
 

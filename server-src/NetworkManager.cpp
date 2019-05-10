@@ -39,7 +39,6 @@ NetworkManager::NetworkManager(unsigned short port)
 NetworkManager::~NetworkManager()
 {
 	networkManagerWorking = false;
-	delete[] connections;
 	closesocket(sock);
 	WSACleanup();
 }
@@ -67,16 +66,16 @@ bool NetworkManager::SendPacket(const char* packet, int packet_size, unsigned lo
 
 Connection* NetworkManager::GetConnectionByUId(unsigned long long connectionUId)
 {
-	lock.lock();
 	for (int i = 0; i < numberOfActiveConnections; i++)
 	{
-		if (connections[numberOfActiveConnections].connectionUId == connectionUId)
+		connections[i].lock.lock();
+		if (connections[i].connectionUId == connectionUId)
 		{
-			lock.unlock();
-			return &connections[numberOfActiveConnections];
+			connections[i].lock.unlock();
+			return &connections[i];
 		}
+		connections[i].lock.unlock();
 	}
-	lock.unlock();
 	return nullptr;
 }
 
@@ -93,13 +92,19 @@ bool NetworkManager::RecvPacket()
 		/* Accept the incoming connection */
 		if (data[PACKETIDOFFSET] == NEWCONNECTION)
 		{
-			lock.lock();
+			incomingConnectionsLock.lock();
 			incomingConnections.push_back({ from, recvSize, data, clock() });
-			lock.unlock();
+			incomingConnectionsLock.unlock();
 			return true;
 		}
 		unsigned long long connectionUId = *(unsigned long long*)&data[CONNECTIONUIDOFFSET];
-		/* not really thread safe */GetConnectionByUId(connectionUId)->packets.push_back({ from, recvSize, data, clock() });
+		/* not thread safe */Connection* conn = GetConnectionByUId(connectionUId);
+		if (conn != nullptr)
+		{
+			conn->lock.lock();
+			conn->packets.push_back({ from, recvSize, data, clock() });
+			conn->lock.unlock();
+		}
 		/* because other thread can get connection pointer and use it without lock */
 		return true;
 	}
@@ -108,9 +113,11 @@ bool NetworkManager::RecvPacket()
 
 bool NetworkManager::AcceptConnection()
 {
-	lock.lock();
+	incomingConnectionsLock.lock();
 	if (incomingConnections.size() > 0)
 	{
+		incomingConnectionsLock.unlock();
+
 		/* protocoluid(int) + connection accepted/rejected(bool) + connectionuid(ull) */
 		char* buff = new char[sizeof(int) + sizeof(char) + sizeof(unsigned long long)];
 		
@@ -118,19 +125,25 @@ bool NetworkManager::AcceptConnection()
 		buff[sizeof(int)] = (char)!(numberOfActiveConnections == maxNumberOfConnections);
 		if (buff[sizeof(int)])
 		{
+			connections[numberOfActiveConnections].lock.lock();
 			connections[numberOfActiveConnections].address = incomingConnections[incomingConnections.size() - 1].from;
 			connections[numberOfActiveConnections].connectionUId = newConnectionUId;
 			connections[numberOfActiveConnections].lastPingPacketTime = clock();
+			connections[numberOfActiveConnections].lock.unlock();
+
 			*(unsigned long long*)& buff[sizeof(int) + sizeof(char)] = newConnectionUId;
 			newConnectionUId += 1;
 			numberOfActiveConnections += 1;
 		}
+
+		incomingConnectionsLock.lock();
 		SendPacket(buff, sizeof(int) + sizeof(char) + sizeof(unsigned long long), incomingConnections[incomingConnections.size() - 1].from.GetSockaddr());
 		incomingConnections.pop_back();
-		lock.unlock();
+		incomingConnectionsLock.unlock();
+
 		return buff[sizeof(int)];
 	}
-	lock.unlock();
+	incomingConnectionsLock.unlock();
 	return false;
 }
 

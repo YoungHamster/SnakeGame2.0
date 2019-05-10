@@ -8,10 +8,11 @@
 class NetworkManager
 {
 private:
-	std::mutex lock;
-
 	SOCKET sock = 0;
+
+	std::mutex incomingConnectionsLock;
 	std::vector<Packet> incomingConnections;
+
 	int numberOfActiveConnections = 0;
 	static const int maxNumberOfConnections = 1000;
 	Connection connections[maxNumberOfConnections];

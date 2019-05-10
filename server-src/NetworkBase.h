@@ -42,6 +42,8 @@ struct Connection
 	unsigned long long connectionUId = 0;
 	clock_t lastPingPacketTime = 0;
 	std::vector<Packet> packets;
+
+	std::mutex lock;
 };
 
 constexpr int PROTOCOLID = 139012;
