@@ -1,6 +1,14 @@
 #include "GameRoom.h"
 
-void GameRoom::HandlePlayersInput()
+void GameRoom::ProcessGameDataPacket(char* packet, int packetSize)
+{
+	switch (packet[DATAOFFSET])
+	{
+
+	}
+}
+
+void GameRoom::ProcessPlayersInput()
 {
 	for (int i = 0; i < players.size(); i++)
 	{
@@ -22,9 +30,11 @@ void GameRoom::HandlePlayersInput()
 			}
 			switch (conn->packets[j].data[PACKETIDOFFSET])
 			{
-			case PING: break;
-			case GAMEDATA: break;
-			case DISCONNECT: 
+			case PING: 
+				net->SendPacket(sendPacketBuffer, MAX_PACKET_SIZE, conn->connectionUId, PONG, 0);
+				break;
+			case GAMEDATA: ProcessGameDataPacket(conn->packets[j].data, conn->packets[j].size); break;
+			case DISCONNECT:
 				net->Disconnect(players[i].connectionUID); 
 				players.erase(players.begin() + i); 
 				i -= 1; 
@@ -74,12 +84,12 @@ void GameRoom::SendGameDataToPlayers()
 	delete[] gameData;
 }
 
-GameRoom::GameRoom(NetworkManager* net, int physw, int physh)
-	:net(net), gamePlayEngine(physw, physh){}
+GameRoom::GameRoom(NetworkManager* net, int gameFieldWidth, int gameFieldHeight)
+	:net(net), gamePlayEngine(gameFieldWidth, gameFieldHeight){}
 
 void GameRoom::Tick()
 {
-	HandlePlayersInput();
+	ProcessPlayersInput();
 	switch (state)
 	{
 	case game:

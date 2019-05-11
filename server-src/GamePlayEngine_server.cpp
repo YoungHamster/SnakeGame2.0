@@ -261,6 +261,7 @@ void GamePlayEngine_server::ChangeSnakeDirection(int snake_id, char dir)
 
 void GamePlayEngine_server::GameTick()
 {
+	tickNumber += 1;
 }
 
 bool GamePlayEngine_server::IsAnyPlayerAlive()
@@ -288,7 +289,7 @@ char* GamePlayEngine_server::GetGameData(int* dataSize)
 {
 	*dataSize = sizeof(GameData) + *number_of_snakes * sizeof(ComperessedSnake) + GetNumberOfSnakeBlocks() * sizeof(SnakeBlock);
 	char* data = new char[*dataSize];
-	GameData gameData = { sizeof(GameData), (short)* number_of_snakes, sizeof(GameData) + *number_of_snakes * sizeof(ComperessedSnake) };
+	GameData gameData = { tickNumber, sizeof(GameData), (short)* number_of_snakes, sizeof(GameData) + *number_of_snakes * sizeof(ComperessedSnake) };
 	*(GameData*)& data[0] = gameData;
 	ComperessedSnake snake;
 	SnakeBlock snakeBlock;

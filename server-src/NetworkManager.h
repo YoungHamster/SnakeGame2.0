@@ -1,7 +1,7 @@
 #pragma once
 
 #include "AsyncArray.h"
-#include "NetworkBase.h"
+#include "NetworkBase//NetworkBase.h"
 
 /* May be big object, don't create on stack */
 class NetworkManager
@@ -16,11 +16,10 @@ private:
 	static const int maxNumberOfConnections = 1000;
 	Connection connections[maxNumberOfConnections];
 
-	unsigned long long newConnectionUId = 0;
+	// 0-reserved connectionUId for inactive connections
+	unsigned long long newConnectionUId = 1;
 
-	public:static const int maxPacketSize = 1300;
-private:
-	char recvPacketBuffer[maxPacketSize];
+	char recvPacketBuffer[MAX_PACKET_SIZE];
 
 	bool networkManagerWorking = true;
 
@@ -28,7 +27,6 @@ private:
 public:
 	NetworkManager(unsigned short port);
 	~NetworkManager();
-	bool SendPacket(const char* packet, int packetSize, unsigned long long connectionUId);
 	bool SendPacket(const char* packet, unsigned int packetSize, unsigned long long connectionUId, unsigned char packetId, unsigned int packetNumber);
 	bool RecvPacket();
 	bool AcceptConnection();

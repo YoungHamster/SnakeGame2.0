@@ -46,29 +46,15 @@ NetworkManager::~NetworkManager()
 bool NetworkManager::SendPacket(const char* packet, int packetSize, sockaddr_in address)
 {
 	*(int*)& packet[PROTOCOLIDOFFSET] = PROTOCOLID;
-	int sent_bytes = sendto(sock, packet, packetSize, 0, (sockaddr*)& address, sizeof(sockaddr_in));
-
-	if (sent_bytes != packetSize)
-	{
-		std::cout << "failed to send packet: return value = " << sent_bytes << std::endl;
-		return false;
-	}
-	return true;
-}
-
-bool NetworkManager::SendPacket(const char* packet, int packetSize, unsigned long long connectionUId)
-{
-	unsigned long long* connId = (unsigned long long*)&packet[CONNECTIONUIDOFFSET];
-	*connId = connectionUId;
-	sockaddr_in addr = GetConnectionByUId(connectionUId)->address.GetSockaddr();
-	return SendPacket(packet, packetSize, addr);
+	return SendUDPPacket(sock, packet, packetSize, address);
 }
 
 bool NetworkManager::SendPacket(const char* packet, unsigned int packetSize, unsigned long long connectionUId, unsigned char packetId, unsigned int packetNumber)
 {
+	*(unsigned long long*)& packet[CONNECTIONUIDOFFSET] = connectionUId;
 	*(unsigned char*)& packet[PACKETIDOFFSET] = packetId;
 	*(unsigned int*)& packet[PACKETNUMBEROFFSET] = packetNumber;
-	return SendPacket(packet, packetSize, connectionUId);
+	return SendPacket(packet, packetSize, GetConnectionByUId(connectionUId)->address.GetSockaddr());
 }
 
 Connection* NetworkManager::GetConnectionByUId(unsigned long long connectionUId)
@@ -90,7 +76,7 @@ bool NetworkManager::RecvPacket()
 {
 	sockaddr_in from;
 	int fromsize = sizeof(from);
-	int recvSize = recvfrom(sock, recvPacketBuffer, maxPacketSize, 0, (sockaddr*)& from, &fromsize);
+	int recvSize = recvfrom(sock, recvPacketBuffer, MAX_PACKET_SIZE, 0, (sockaddr*)& from, &fromsize);
 	if (recvSize > 0 && *(int*)recvPacketBuffer[PROTOCOLIDOFFSET] == PROTOCOLID && *(int*)recvPacketBuffer[PACKETSIZEOFFSET] == recvSize)
 	{
 		char* data = new char[recvSize];
@@ -109,7 +95,18 @@ bool NetworkManager::RecvPacket()
 		if (conn != nullptr)
 		{
 			conn->lock.lock();
-			conn->packets.push_back({ from, recvSize, data, clock() });
+
+			/* if user was disconnected send him disconnection packet second time in case he didn't receive first */
+			if (!conn->active)
+			{
+				char packet[DATAOFFSET];
+				SendPacket(packet, DATAOFFSET, connectionUId, DISCONNECT, 0);
+				conn->connectionUId = 0;
+			}
+			else
+			{
+				conn->packets.push_back({ from, recvSize, data, clock() });
+			}
 			conn->lock.unlock();
 		}
 		/* because other thread can get connection pointer and use it without lock */

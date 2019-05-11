@@ -26,9 +26,9 @@ void RecvPackets(NetworkManager* net)
 
 int main()
 {
+	ConsoleManager consoleManager;
 	NetworkManager* net = new NetworkManager(50001);
 	GameRoom* gameRoom = new GameRoom(net, 64, 36);
-	ConsoleManager consoleManager;
 	std::thread acceptConnectionsThr(AcceptConnections, net);
 	std::thread recvPacketsThr(RecvPackets, net);
 	recvPacketsThr.detach();

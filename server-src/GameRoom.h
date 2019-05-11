@@ -2,30 +2,11 @@
 #include "GamePlayEngine_server.h"
 #include "NetworkManager.h"
 
-
-
-enum PlayerAccessLevels
-{
-	NONE,
-	DEFAULT,
-	MEDIUM,
-	HIGH,
-	GOD
-};
-
 struct Player
 {
 	unsigned long long connectionUID;
 	PlayerAccessLevels accessLevel = DEFAULT;
 	Snake* snake;
-};
-
-enum GameRoomStates
-{
-	game,
-	pauseGame,
-	endOfGame,
-	lobby
 };
 
 /* May be big object, don't create on stack */
@@ -39,16 +20,17 @@ private:
 	clock_t lastGameTickTime = 0;
 	int gameTickPeriod = 100;
 
-	char sendPacketBuffer[NetworkManager::maxPacketSize];
+	char sendPacketBuffer[MAX_PACKET_SIZE];
 
-	void HandlePlayersInput();
+	void ProcessGameDataPacket(char* packet, int packetSize);
+	void ProcessPlayersInput();
 	void StartGame();
 	void PauseGame();
 	void EndGame();
 	void SendGameDataToPlayers();
 
 public:
-	GameRoom(NetworkManager* net, int physw, int physh);
+	GameRoom(NetworkManager* net, int gameFieldWidth, int gameFieldHeight);
 	~GameRoom();
 	void Tick();
 };

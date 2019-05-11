@@ -3,19 +3,7 @@
 
 #include "src//GamePlayStructsAndDefines.h"
 #include "src//SnakesManager.h"
-
-struct ComperessedSnake
-{
-	unsigned int bodyOffset = 0; // SnakeBlocks of this snake offset from snakesBodiesOffset
-	short bodySize = 0;
-};
-
-struct GameData
-{
-	unsigned int snakesOffset; // ComperessedSnakes offset in bytes from the beginning of game data in packet
-	short numberOfSnakes;
-	unsigned int snakesBodiesOffset; // SnakeBlocks offset in bytes from the beginning of game data in packet
-};
+#include "NetworkBase//NetworkBase.h"
 
 class GamePlayEngine_server
 {
@@ -50,6 +38,8 @@ private:
 	};
 
 	int appleSpawnFrequency = 1;
+
+	unsigned int tickNumber = 0;
 
 	void ChangeObject(int x, int y, int type);
 	int GetObjType(int x, int y);
