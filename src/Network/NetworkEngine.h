@@ -6,19 +6,26 @@ struct NetworkInput
 
 };
 
+const int MaxNumberOfAttemptsToConnect = 10;
+
 class NetworkEngine
 {
 private:
 	SOCKET sock;
 	Address serverAddress;
+	ConnectionStates connectionState = DISCONNECTED;
 
 	char sendPacketBuffer[MAX_PACKET_SIZE];
 	char recvPacketBuffer[MAX_PACKET_SIZE];
 	std::vector<Packet> receivedPackets;
 
-	bool SendPacket();
+	unsigned long long connectionUId;
+	clock_t lastPongPacketTime;
+
+	bool SendPacket(const char* packet, unsigned int packetSize, unsigned long long connectionUId, unsigned char packetId);
 	bool RecvPacket();
 	bool CollectGameDataFromPackets();
+	void ProcessIncomingPacket();
 public:
 	NetworkEngine();
 	~NetworkEngine();

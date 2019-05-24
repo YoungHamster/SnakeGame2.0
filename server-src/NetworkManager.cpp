@@ -49,11 +49,10 @@ bool NetworkManager::SendPacket(const char* packet, int packetSize, sockaddr_in 
 	return SendUDPPacket(sock, packet, packetSize, address);
 }
 
-bool NetworkManager::SendPacket(const char* packet, unsigned int packetSize, unsigned long long connectionUId, unsigned char packetId, unsigned int packetNumber)
+bool NetworkManager::SendPacket(const char* packet, unsigned int packetSize, unsigned long long connectionUId, unsigned char packetId)
 {
 	*(unsigned long long*)& packet[CONNECTIONUIDOFFSET] = connectionUId;
 	*(unsigned char*)& packet[PACKETIDOFFSET] = packetId;
-	*(unsigned int*)& packet[PACKETNUMBEROFFSET] = packetNumber;
 	return SendPacket(packet, packetSize, GetConnectionByUId(connectionUId)->address.GetSockaddr());
 }
 
@@ -100,7 +99,7 @@ bool NetworkManager::RecvPacket()
 			if (!conn->active)
 			{
 				char packet[DATAOFFSET];
-				SendPacket(packet, DATAOFFSET, connectionUId, DISCONNECT, 0);
+				SendPacket(packet, DATAOFFSET, connectionUId, DISCONNECT);
 				conn->connectionUId = 0;
 			}
 			else
@@ -168,6 +167,6 @@ bool NetworkManager::AcceptConnection()
 void NetworkManager::Disconnect(unsigned long long connectionUId)
 {
 	char packet[DATAOFFSET];
-	SendPacket(packet, DATAOFFSET, connectionUId, DISCONNECT, 0);
+	SendPacket(packet, DATAOFFSET, connectionUId, DISCONNECT);
 	GetConnectionByUId(connectionUId)->active = false;
 }

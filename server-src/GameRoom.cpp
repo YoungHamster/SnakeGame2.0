@@ -22,24 +22,33 @@ void GameRoom::ProcessPlayersInput()
 		conn->lock.lock();
 		for (int j = 0; j < conn->packets.size(); j++)
 		{
-			if (clock() - conn->packets[j].arriveTime >= gameTickPeriod * 2)
+			if (clock() - conn->packets[j].arriveTime >= gameTickPeriod)
 			{
-				conn->packets.erase(conn->packets.begin() + j);
-				j -= 1;
+				std::cout << "WARNING: packets from players are being processed too slow" << std::endl;
+				conn->lock.unlock();
 				continue;
 			}
 			switch (conn->packets[j].data[PACKETIDOFFSET])
 			{
 			case PING: 
-				net->SendPacket(sendPacketBuffer, MAX_PACKET_SIZE, conn->connectionUId, PONG, 0);
+				conn->lastPingPacketTime = conn->packets[j].arriveTime;
+				net->SendPacket(sendPacketBuffer, MAX_PACKET_SIZE, conn->connectionUId, PONG);
 				break;
 			case GAMEDATA: ProcessGameDataPacket(conn->packets[j].data, conn->packets[j].size); break;
 			case DISCONNECT:
 				net->Disconnect(players[i].connectionUID); 
 				players.erase(players.begin() + i); 
 				i -= 1; 
+				conn->lock.unlock();
+				continue;
 				break;
 			}
+		}
+		if (clock() - conn->lastPingPacketTime >= 5000)// no ping packets from player for 5 seconds-disconnect him
+		{
+			net->Disconnect(players[i].connectionUID);
+			players.erase(players.begin() + i);
+			i -= 1;
 		}
 		conn->lock.unlock();
 	}
@@ -77,6 +86,7 @@ void GameRoom::SendGameDataToPlayers()
 		for (int j = 0; j < numberOfPackets; j++)
 		{
 			memcpy(&sendPacketBuffer[DATAOFFSET], &gameData[j * (1300 - DATAOFFSET)], packetsSizes[j]);
+			/* NEED TO FIX ISSUE WITH PACKET NUMBER */
 			net->SendPacket(sendPacketBuffer, packetsSizes[j] + DATAOFFSET, players[i].connectionUID, GAMEDATA, (unsigned int)j);
 		}
 	}

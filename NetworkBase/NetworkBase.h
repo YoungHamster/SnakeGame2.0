@@ -44,7 +44,7 @@ struct Packet
 
 struct Connection
 {
-	bool active;
+	bool active = false;
 	Address address;
 	unsigned long long connectionUId = 0;
 	clock_t lastPingPacketTime = 0;
@@ -53,17 +53,30 @@ struct Connection
 	std::mutex lock;
 };
 
-constexpr int PROTOCOLID = 139012;
+enum ConnectionStates
+{
+	CONNECTED,
+	DISCONNECTED
+};
+
+constexpr int32_t PROTOCOLID = 139012;
 
 /* standard offsets in every packet to send and receive */
 enum PacketOffsets
 {
 	PROTOCOLIDOFFSET = 0,
 	PACKETSIZEOFFSET = 4, // packetsize-4byte unsigned int
-	PACKETIDOFFSET = 8, // packetid-4byte unsigned char
+	PACKETIDOFFSET = 8, // packetid-1byte unsigned char
 	CONNECTIONUIDOFFSET = 9,// connectionuid-8byte unsigned int(unsigned long long)
-	PACKETNUMBEROFFSET = 17,// packetnumber-4byte unsigned int
-	DATAOFFSET = 21
+	DATAOFFSET = 17
+};
+
+struct PacketHeader
+{
+	int32_t protocolId;
+	uint32_t packetSize;
+	uint8_t packetId;
+	uint64_t connectionUId;
 };
 
 /* standard ids, that define how to handle packet */
