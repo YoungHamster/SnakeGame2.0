@@ -2,6 +2,9 @@
 #include "GamePlayEngine_server.h"
 #include "NetworkManager.h"
 
+#define SUPPOSED_MTU 1350
+#define FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET SUPPOSED_MTU - DATAOFFSET - sizeof(GameDataPacketHeader)
+
 struct Player
 {
 	unsigned long long connectionUID;

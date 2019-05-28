@@ -27,18 +27,43 @@ bool NetworkEngine::RecvPacket()
 
 bool NetworkEngine::CollectGameDataFromPackets()
 {
+	for (int i = 0; i < receivedPackets.size(); i++)
+	{
+		if (receivedPackets[i].data[PACKETIDOFFSET] == GAMEDATA)
+		{
+			GameDataPacketHeader gdph = *(GameDataPacketHeader*)& receivedPackets[i].data[DATAOFFSET];
+			if (gdph.packetNumber == 0)
+			{
+				collectingCurrentTickGameData = true;
+				GameDataHeader gdh = *(GameDataHeader*)& receivedPackets[i].data[DATAOFFSET + 1];
+				currentTickNumber = gdh.tickNumber;
+				if(currentTickGameData) delete[] currentTickGameData;
+				currentTickGameData = new char[gdh.sizeOfGameData];
+			}
+		}
+	}
 
+	if (collectingCurrentTickGameData)
+	{
+		for (int i = 0; i < receivedPackets.size(); i++)
+		{
+			// TODO
+		}
+	}
 	return false;
 }
 
 void NetworkEngine::ProcessIncomingPacket()
 {
+	if (receivedPackets.size() == 0) return;
 	switch (receivedPackets[0].data[PACKETIDOFFSET])
 	{
 	case PONG: lastPongPacketTime = receivedPackets[0].arriveTime; break;
 	case GAMEDATA: CollectGameDataFromPackets(); break;
 	case DISCONNECT: connectionState = DISCONNECTED; break;
+	default:  break;
 	}
+	receivedPackets.erase(receivedPackets.begin());
 }
 
 NetworkEngine::NetworkEngine(){}
@@ -83,6 +108,10 @@ void NetworkEngine::Disconnect()
 
 void NetworkEngine::GameTick()
 {
+	while (receivedPackets.size() > 0)
+	{
+		ProcessIncomingPacket();
+	}
 }
 
 void NetworkEngine::SendInput(NetworkInput input)

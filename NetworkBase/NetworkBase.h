@@ -106,16 +106,28 @@ enum GameRoomStates
 	lobby
 };
 
-struct ComperessedSnake
+struct CompressedSnake
 {
-	unsigned int bodyOffset = 0; // SnakeBlocks of this snake offset from snakesBodiesOffset
+	unsigned int bodyOffset = 0; // SnakeBlocks of this snake offset from start of snakeblocks data
 	short bodySize = 0;
 };
 
-struct GameData
+/* Structure of game data in byte array: */
+/*  16bytes											GameDataHeader, 
+	sizeof(CompressedSnake)*numberOfSnakes bytes	snakes info, 
+	all the rest									SnakeBlocks*/
+struct GameDataHeader
 {
-	unsigned int tickNumber;
-	unsigned int snakesOffset; // ComperessedSnakes offset in bytes from the beginning of game data in packet
-	short numberOfSnakes;
-	unsigned int snakesBodiesOffset; // SnakeBlocks offset in bytes from the beginning of game data in packet
+	uint32_t tickNumber;
+	uint32_t sizeOfGameData;
+	int16_t numberOfSnakes;
+	uint16_t snakesOffset;
+	uint32_t snakesBlocksOffset;
+};
+
+// Data necessary to identify packet with game data
+struct GameDataPacketHeader
+{
+	uint8_t packetNumber;
+	uint32_t tickNumber;
 };

@@ -259,9 +259,11 @@ void GamePlayEngine_server::ChangeSnakeDirection(int snake_id, char dir)
 	snakesManager.snakes[snake_id].newdir = dir;
 }
 
+// TODO
 void GamePlayEngine_server::GameTick()
 {
 	tickNumber += 1;
+	
 }
 
 bool GamePlayEngine_server::IsAnyPlayerAlive()
@@ -287,23 +289,23 @@ void GamePlayEngine_server::KillAllSnakes()
 
 char* GamePlayEngine_server::GetGameData(int* dataSize)
 {
-	*dataSize = sizeof(GameData) + *number_of_snakes * sizeof(ComperessedSnake) + GetNumberOfSnakeBlocks() * sizeof(SnakeBlock);
+	*dataSize = sizeof(GameDataHeader) + *number_of_snakes * sizeof(CompressedSnake) + GetNumberOfSnakeBlocks() * sizeof(SnakeBlock);
 	char* data = new char[*dataSize];
-	GameData gameData = { tickNumber, sizeof(GameData), (short)* number_of_snakes, sizeof(GameData) + *number_of_snakes * sizeof(ComperessedSnake) };
-	*(GameData*)& data[0] = gameData;
-	ComperessedSnake snake;
+	GameDataHeader gameData = { tickNumber, *dataSize, sizeof(GameDataHeader), (short)* number_of_snakes, sizeof(GameDataHeader) + *number_of_snakes * sizeof(CompressedSnake) };
+	*(GameDataHeader*)& data[0] = gameData;
+	CompressedSnake snake;
 	SnakeBlock snakeBlock;
-	unsigned int bodyOffset = 0;
+	unsigned int blockOffset = 0;
 	for (int i = 0; i < *number_of_snakes; i++)
 	{
-		snake = { bodyOffset, (short)snakesManager.snakes[i].bodySize };
-		*(ComperessedSnake*)& data[gameData.snakesOffset + i * sizeof(ComperessedSnake)] = snake;
+		snake = { blockOffset, (short)snakesManager.snakes[i].bodySize };
+		*(CompressedSnake*)& data[gameData.snakesOffset + i * sizeof(CompressedSnake)] = snake;
 		for (int j = 0; j < snakesManager.snakes[i].bodySize; j++)
 		{
 			snakeBlock =  snakesManager.snakes[i].body[j];
-			*(SnakeBlock*)& data[gameData.snakesBodiesOffset + bodyOffset + j * sizeof(SnakeBlock)] = snakeBlock;
+			*(SnakeBlock*)& data[gameData.snakesBlocksOffset + blockOffset + j * sizeof(SnakeBlock)] = snakeBlock;
 		}
-		bodyOffset += snakesManager.snakes[i].bodySize * sizeof(SnakeBlock);
+		blockOffset += snakesManager.snakes[i].bodySize * sizeof(SnakeBlock);
 	}
 	return data;
 }

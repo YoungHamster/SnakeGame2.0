@@ -73,24 +73,30 @@ void GameRoom::SendGameDataToPlayers()
 {
 	int gameDataSize;
 	char* gameData = gamePlayEngine.GetGameData(&gameDataSize);
-	int numberOfPackets = gameDataSize % (1300 - DATAOFFSET) == 0 ? // If (gameDataSize % (1300 - data) > 0) then we need gameDataSize / (1300 - data) + 1 packets to send all data
-		gameDataSize / (1300 - DATAOFFSET) : gameDataSize / (1300 - DATAOFFSET) + 1; //1300 bytes per packet to surely fit in MTU of most devices
-	int* packetsSizes = new int[numberOfPackets];
-	for (int i = 0; i < numberOfPackets; i++)
+	int numberOfPackets = gameDataSize % (FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET) == 0 ? /* Check if gameDataSize / (free palce for data in single packet) is whole number
+																								   and if it's not add 1 to numberOfPackets*/
+		gameDataSize / (FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET) : gameDataSize / (FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET) + 1;
+	if (numberOfPackets >= 255)
 	{
-		packetsSizes[i] = i < (numberOfPackets - 1) ? (1300 - DATAOFFSET) : gameDataSize % (1300 - DATAOFFSET);
+		delete[] gameData;
+		return;
 	}
+	int lastPacketSize = (gameDataSize % (FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET) == 0) ? SUPPOSED_MTU : 
+		(gameDataSize % (FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET) + DATAOFFSET + sizeof(GameDataPacketHeader));
 
+	GameDataPacketHeader gdph;
+	gdph.tickNumber = (*(GameDataHeader*)gameData).tickNumber;
 	for (int i = 0; i < players.size(); i++)
 	{
-		for (int j = 0; j < numberOfPackets; j++)
+		for (unsigned char j = 0; j < numberOfPackets; j++)
 		{
-			memcpy(&sendPacketBuffer[DATAOFFSET], &gameData[j * (1300 - DATAOFFSET)], packetsSizes[j]);
-			/* NEED TO FIX ISSUE WITH PACKET NUMBER */
-			net->SendPacket(sendPacketBuffer, packetsSizes[j] + DATAOFFSET, players[i].connectionUID, GAMEDATA, (unsigned int)j);
+			int packetSize = j == numberOfPackets - 1 ? lastPacketSize : SUPPOSED_MTU;
+			memcpy(&sendPacketBuffer[DATAOFFSET + sizeof(GameDataPacketHeader)], &gameData[j * (FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET)], packetSize - DATAOFFSET - sizeof(GameDataPacketHeader));
+			gdph.packetNumber = j;
+			*(GameDataPacketHeader*)& sendPacketBuffer[DATAOFFSET] = gdph;
+			net->SendPacket(sendPacketBuffer, packetSize, players[i].connectionUID, GAMEDATA);
 		}
 	}
-	delete[] packetsSizes;
 	delete[] gameData;
 }
 
