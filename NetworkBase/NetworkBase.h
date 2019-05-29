@@ -131,3 +131,6 @@ struct GameDataPacketHeader
 	uint8_t packetNumber;
 	uint32_t tickNumber;
 };
+
+#define SUPPOSED_MTU 1350
+#define FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET SUPPOSED_MTU - DATAOFFSET - sizeof(GameDataPacketHeader)
