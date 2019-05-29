@@ -51,9 +51,8 @@ bool NetworkManager::SendPacket(const char* packet, int packetSize, sockaddr_in 
 
 bool NetworkManager::SendPacket(const char* packet, unsigned int packetSize, unsigned long long connectionUId, unsigned char packetId)
 {
-	*(unsigned long long*)& packet[CONNECTIONUIDOFFSET] = connectionUId;
-	*(unsigned char*)& packet[PACKETIDOFFSET] = packetId;
-	return SendPacket(packet, packetSize, GetConnectionByUId(connectionUId)->address.GetSockaddr());
+	*(PacketHeader*)packet = { PROTOCOLID, packetSize, packetId, connectionUId };
+	return SendUDPPacket(sock, packet, packetSize, GetConnectionByUId(connectionUId)->address.GetSockaddr());
 }
 
 Connection* NetworkManager::GetConnectionByUId(unsigned long long connectionUId)
@@ -90,7 +89,7 @@ bool NetworkManager::RecvPacket()
 			return true;
 		}
 		unsigned long long connectionUId = *(unsigned long long*)&data[CONNECTIONUIDOFFSET];
-		/* not thread safe */Connection* conn = GetConnectionByUId(connectionUId);
+		Connection* conn = GetConnectionByUId(connectionUId);
 		if (conn != nullptr)
 		{
 			conn->lock.lock();
