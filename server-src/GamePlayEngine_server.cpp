@@ -289,23 +289,40 @@ void GamePlayEngine_server::KillAllSnakes()
 
 char* GamePlayEngine_server::GetGameData(int* dataSize)
 {
-	*dataSize = sizeof(GameDataHeader) + *number_of_snakes * sizeof(CompressedSnake) + GetNumberOfSnakeBlocks() * sizeof(SnakeBlock);
+	int numberOfApples = GetNumberOfApples();
+	*dataSize = sizeof(GameDataHeader) + *number_of_snakes * sizeof(CompressedSnake) + GetNumberOfSnakeBlocks() * sizeof(SnakeBlock) + numberOfApples * sizeof(AppleData);
 	char* data = new char[*dataSize];
-	GameDataHeader gameData = { tickNumber, *dataSize, sizeof(GameDataHeader), (short)* number_of_snakes, sizeof(GameDataHeader) + *number_of_snakes * sizeof(CompressedSnake) };
-	*(GameDataHeader*)& data[0] = gameData;
+	GameDataHeader gdh = { tickNumber, *dataSize, sizeof(GameDataHeader), (short)* number_of_snakes, 
+		sizeof(GameDataHeader) + *number_of_snakes * sizeof(CompressedSnake), *dataSize - numberOfApples * sizeof(AppleData) };
+	*(GameDataHeader*)& data[0] = gdh;
 	CompressedSnake snake;
 	SnakeBlock snakeBlock;
 	unsigned int blockOffset = 0;
 	for (int i = 0; i < *number_of_snakes; i++)
 	{
 		snake = { blockOffset, (short)snakesManager.snakes[i].bodySize };
-		*(CompressedSnake*)& data[gameData.snakesOffset + i * sizeof(CompressedSnake)] = snake;
+		*(CompressedSnake*)& data[gdh.snakesOffset + i * sizeof(CompressedSnake)] = snake;
 		for (int j = 0; j < snakesManager.snakes[i].bodySize; j++)
 		{
 			snakeBlock =  snakesManager.snakes[i].body[j];
-			*(SnakeBlock*)& data[gameData.snakesBlocksOffset + blockOffset + j * sizeof(SnakeBlock)] = snakeBlock;
+			*(SnakeBlock*)& data[gdh.snakesBlocksOffset + blockOffset + j * sizeof(SnakeBlock)] = snakeBlock;
 		}
 		blockOffset += snakesManager.snakes[i].bodySize * sizeof(SnakeBlock);
+	}
+
+	int numberOfProcessedApples = 0;
+	for (int i = 0; i < physh; i++)
+	{
+		for (int j = 0; j < physw; j++)
+		{
+			if (GetObjType(j, i) == APPLE)
+			{
+				*(AppleData*)& data[gdh.applesOffset + numberOfProcessedApples] = { j, i };
+				numberOfProcessedApples += 1;
+			}
+		}
+		// little optimization
+		if (numberOfProcessedApples == numberOfApples) return data;
 	}
 	return data;
 }
@@ -323,4 +340,17 @@ int GamePlayEngine_server::GetNumberOfSnakeBlocks()
 		numberOfSnakeBlocks += snakesManager.snakes[i].bodySize;
 	}
 	return numberOfSnakeBlocks;
+}
+
+int GamePlayEngine_server::GetNumberOfApples()
+{
+	int numberOfApples = 0;
+	for (int i = 0; i < physh; i++)
+	{
+		for (int j = 0; j < physw; j++)
+		{
+			if (GetObjType(j, i) == APPLE) numberOfApples += 1;
+		}
+	}
+	return numberOfApples;
 }

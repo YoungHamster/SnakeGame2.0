@@ -112,6 +112,12 @@ struct CompressedSnake
 	short bodySize = 0;
 };
 
+struct AppleData
+{
+	short x;
+	short y;
+};
+
 /* Structure of game data in byte array: */
 /*  16bytes											GameDataHeader, 
 	sizeof(CompressedSnake)*numberOfSnakes bytes	snakes info, 
@@ -123,6 +129,7 @@ struct GameDataHeader
 	int16_t numberOfSnakes;
 	uint16_t snakesOffset;
 	uint32_t snakesBlocksOffset;
+	uint32_t applesOffset;
 };
 
 // Data necessary to identify packet with game data

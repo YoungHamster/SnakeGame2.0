@@ -68,4 +68,5 @@ public:
 	char* GetGameData(int* dataSize);
 	int GetNumberOfSnakes();
 	int GetNumberOfSnakeBlocks();
+	int GetNumberOfApples();
 };
