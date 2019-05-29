@@ -2,10 +2,7 @@
 
 bool NetworkEngine::SendPacket(const char* packet, unsigned int packetSize, unsigned long long connectionUId, unsigned char packetId)
 {
-	*(int*)& packet[PROTOCOLIDOFFSET] = PROTOCOLID;
-	*(unsigned int*)& packet[PACKETSIZEOFFSET] = packetSize;
-	*(unsigned long long*)& packet[CONNECTIONUIDOFFSET] = connectionUId;
-	*(unsigned char*)& packet[PACKETIDOFFSET] = packetId;
+	*(PacketHeader*)packet = { PROTOCOLID, packetSize, packetId, connectionUId };
 	return SendUDPPacket(sock, packet, packetSize, serverAddress.GetSockaddr());
 }
 
@@ -37,7 +34,13 @@ bool NetworkEngine::CollectGameDataFromPackets()
 				collectingCurrentTickGameData = true;
 				GameDataHeader gdh = *(GameDataHeader*)& receivedPackets[i].data[DATAOFFSET + 1];
 				currentTickNumber = gdh.tickNumber;
-				if(currentTickGameData) delete[] currentTickGameData;
+				if (currentTickGameData)
+				{
+					if (prevTickGameData) delete[] prevTickGameData;
+					prevTickGameData = new char[(*(GameDataHeader*)currentTickGameData).sizeOfGameData];
+					memcpy(prevTickGameData, currentTickGameData, (*(GameDataHeader*)currentTickGameData).sizeOfGameData);
+					delete[] currentTickGameData;
+				}
 				currentTickGameData = new char[gdh.sizeOfGameData];
 			}
 		}
@@ -47,7 +50,18 @@ bool NetworkEngine::CollectGameDataFromPackets()
 	{
 		for (int i = 0; i < receivedPackets.size(); i++)
 		{
-			// TODO
+			if (receivedPackets[i].data[PACKETIDOFFSET] == GAMEDATA)
+			{
+				GameDataPacketHeader gdph = *(GameDataPacketHeader*)& receivedPackets[i].data[DATAOFFSET];
+				if (gdph.tickNumber == currentTickNumber)
+				{
+					memcpy(&currentTickGameData[FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET * gdph.packetNumber],
+						&receivedPackets[i].data[DATAOFFSET + sizeof(GameDataPacketHeader)],
+						receivedPackets[i].size - (DATAOFFSET + sizeof(GameDataPacketHeader)));
+				}
+				receivedPackets.erase(receivedPackets.begin() + i);
+				i -= 1;
+			}
 		}
 	}
 	return false;

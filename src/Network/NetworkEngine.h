@@ -25,6 +25,7 @@ private:
 	unsigned int currentTickNumber = 0;
 	bool collectingCurrentTickGameData = false;
 	char* currentTickGameData = nullptr;
+	char* prevTickGameData = nullptr;
 
 	bool SendPacket(const char* packet, unsigned int packetSize, unsigned long long connectionUId, unsigned char packetId);
 	bool RecvPacket();
