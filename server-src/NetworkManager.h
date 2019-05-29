@@ -28,6 +28,7 @@ public:
 	NetworkManager(unsigned short port);
 	~NetworkManager();
 	bool SendPacket(const char* packet, unsigned int packetSize, unsigned long long connectionUId, unsigned char packetId);
+	bool SendPacketToAll(const char* packet, unsigned int packetSize, unsigned char packetId);
 	bool RecvPacket();
 	bool AcceptConnection();
 	void Disconnect(unsigned long long connectionUId);

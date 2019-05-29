@@ -86,16 +86,13 @@ void GameRoom::SendGameDataToPlayers()
 
 	GameDataPacketHeader gdph;
 	gdph.tickNumber = (*(GameDataHeader*)gameData).tickNumber;
-	for (int i = 0; i < players.size(); i++)
+	for (unsigned char i = 0; i < numberOfPackets; i++)
 	{
-		for (unsigned char j = 0; j < numberOfPackets; j++)
-		{
-			int packetSize = j == numberOfPackets - 1 ? lastPacketSize : SUPPOSED_MTU;
-			memcpy(&sendPacketBuffer[DATAOFFSET + sizeof(GameDataPacketHeader)], &gameData[j * (FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET)], packetSize - DATAOFFSET - sizeof(GameDataPacketHeader));
-			gdph.packetNumber = j;
-			*(GameDataPacketHeader*)& sendPacketBuffer[DATAOFFSET] = gdph;
-			net->SendPacket(sendPacketBuffer, packetSize, players[i].connectionUID, GAMEDATA);
-		}
+		int packetSize = i == numberOfPackets - 1 ? lastPacketSize : SUPPOSED_MTU;
+		memcpy(&sendPacketBuffer[DATAOFFSET + sizeof(GameDataPacketHeader)], &gameData[i * (FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET)], packetSize - DATAOFFSET - sizeof(GameDataPacketHeader));
+		gdph.packetNumber = i;
+		*(GameDataPacketHeader*)& sendPacketBuffer[DATAOFFSET] = gdph;
+		net->SendPacketToAll(sendPacketBuffer, packetSize, GAMEDATA);
 	}
 	delete[] gameData;
 }

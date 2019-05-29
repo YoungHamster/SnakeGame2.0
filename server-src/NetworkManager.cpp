@@ -55,6 +55,18 @@ bool NetworkManager::SendPacket(const char* packet, unsigned int packetSize, uns
 	return SendUDPPacket(sock, packet, packetSize, GetConnectionByUId(connectionUId)->address.GetSockaddr());
 }
 
+bool NetworkManager::SendPacketToAll(const char* packet, unsigned int packetSize, unsigned char packetId)
+{
+	for (int i = 0; i < maxNumberOfConnections; i++)
+	{
+		if (connections[i].active)
+		{
+			SendPacket(packet, packetSize, connections[i].connectionUId, packetId);
+		}
+	}
+	return false;
+}
+
 Connection* NetworkManager::GetConnectionByUId(unsigned long long connectionUId)
 {
 	for (int i = 0; i < maxNumberOfConnections; i++)
@@ -141,11 +153,13 @@ bool NetworkManager::AcceptConnection()
 		buff[sizeof(int)] = (char)!(newConnectionId == -1);
 		if (buff[sizeof(int)])
 		{
-			connections[numberOfActiveConnections].lock.lock();
-			connections[numberOfActiveConnections].address = incomingConnections[incomingConnections.size() - 1].from;
-			connections[numberOfActiveConnections].connectionUId = newConnectionUId;
-			connections[numberOfActiveConnections].lastPingPacketTime = clock();
-			connections[numberOfActiveConnections].lock.unlock();
+			incomingConnectionsLock.lock();
+			connections[newConnectionId].lock.lock();
+			connections[newConnectionId].address = incomingConnections[incomingConnections.size() - 1].from;
+			incomingConnectionsLock.unlock();
+			connections[newConnectionId].connectionUId = newConnectionUId;
+			connections[newConnectionId].lastPingPacketTime = clock();
+			connections[newConnectionId].lock.unlock();
 
 			*(unsigned long long*)& buff[sizeof(int) + sizeof(char)] = newConnectionUId;
 			newConnectionUId += 1;
