@@ -1,6 +1,5 @@
 #pragma once
 
-#include "AsyncArray.h"
 #include "NetworkBase//NetworkBase.h"
 
 /* May be big object, don't create on stack */
@@ -29,8 +28,21 @@ public:
 	~NetworkManager();
 	bool SendPacket(const char* packet, unsigned int packetSize, unsigned long long connectionUId, unsigned char packetId);
 	bool SendPacketToAll(const char* packet, unsigned int packetSize, unsigned char packetId);
+	bool SendPacketToListOfConnection(const char* packet, unsigned int packetSize, unsigned char packetId, unsigned long long* connectionsUIds, int numberOfConnectionsUIds);
+	bool ReliablySendPacket(const char* packet, unsigned int packetSize, unsigned long long connectionUId, unsigned char packetId);
+	void ReliablySendPacketToAll(const char* packet, unsigned int packetSize, unsigned char packetId);
+	bool ReliablySendPacketToListOfConnection(const char* packet, unsigned int packetSize, unsigned char packetId, unsigned long long* connectionsUIds, int numberOfConnectionsUIds);
 	bool RecvPacket();
 	bool AcceptConnection();
 	void Disconnect(unsigned long long connectionUId);
 	Connection* GetConnectionByUId(unsigned long long connectionUId);
+};
+
+struct ConnInfoForRDT // RDT-Reliable Data Transfer
+{
+	bool failed = false;
+	bool succeed = false;
+	bool sentPacket = false;
+	clock_t packetSentTime = 0;
+	unsigned int numberOfTries = 0;
 };

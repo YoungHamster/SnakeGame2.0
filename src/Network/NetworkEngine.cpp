@@ -2,7 +2,7 @@
 
 bool NetworkEngine::SendPacket(const char* packet, unsigned int packetSize, unsigned long long connectionUId, unsigned char packetId)
 {
-	*(PacketHeader*)packet = { PROTOCOLID, packetSize, packetId, connectionUId };
+	*(PacketHeader*)packet = { UNSAFEPROTOCOLID, packetSize, packetId, connectionUId };
 	return SendUDPPacket(sock, packet, packetSize, serverAddress.GetSockaddr());
 }
 
@@ -12,7 +12,9 @@ bool NetworkEngine::RecvPacket()
 	int fromsize = sizeof(from);
 	int recvSize = recvfrom(sock, recvPacketBuffer, MAX_PACKET_SIZE, 0, (sockaddr*)& from, &fromsize);
 	if (Address(from) != serverAddress) return false;
-	if (recvSize > 0 && *(int*)recvPacketBuffer[PROTOCOLIDOFFSET] == PROTOCOLID && *(int*)recvPacketBuffer[PACKETSIZEOFFSET] == recvSize)
+	if (recvSize > 0 && 
+		(*(int*)recvPacketBuffer[PROTOCOLIDOFFSET] == UNSAFEPROTOCOLID || *(int*)recvPacketBuffer[PROTOCOLIDOFFSET] == SAFEPROTOCOLID)
+		&& *(int*)recvPacketBuffer[PACKETSIZEOFFSET] == recvSize)
 	{
 		char* data = new char[recvSize];
 		memcpy(data, recvPacketBuffer, recvSize);
@@ -56,8 +58,8 @@ bool NetworkEngine::CollectGameDataFromPackets()
 				if (gdph.tickNumber == currentTickNumber)
 				{
 					memcpy(&currentTickGameData[FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET * gdph.packetNumber],
-						&receivedPackets[i].data[DATAOFFSET + sizeof(GameDataPacketHeader)],
-						receivedPackets[i].size - (DATAOFFSET + sizeof(GameDataPacketHeader)));
+						   &receivedPackets[i].data[DATAOFFSET + sizeof(GameDataPacketHeader)],
+						   receivedPackets[i].size - (DATAOFFSET + sizeof(GameDataPacketHeader)));
 				}
 				receivedPackets.erase(receivedPackets.begin() + i);
 				i -= 1;

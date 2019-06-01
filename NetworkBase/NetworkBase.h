@@ -8,8 +8,6 @@
 #include <mutex>
 #include <iostream>
 
-#define MAX_PACKET_SIZE 1300
-
 class Address
 {
 private:
@@ -59,7 +57,8 @@ enum ConnectionStates
 	DISCONNECTED
 };
 
-constexpr int32_t PROTOCOLID = 139012;
+constexpr int32_t UNSAFEPROTOCOLID = 139012;
+constexpr int32_t SAFEPROTOCOLID = 139013;
 
 /* standard offsets in every packet to send and receive */
 enum PacketOffsets
@@ -86,6 +85,8 @@ enum PacketsIDs
 	PING = 0x02,
 	PONG = 0x03,
 	GAMEDATA = 0x04,
+	NOCONF = 0xfd,
+	CONF = 0xfe, // Confirmation that packet was received(used to reliably transfer data through UDP connections)
 	DISCONNECT = 0xff
 };
 
@@ -140,4 +141,8 @@ struct GameDataPacketHeader
 };
 
 #define SUPPOSED_MTU 1350
+#define MAX_PACKET_SIZE SUPPOSED_MTU
 #define FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET SUPPOSED_MTU - DATAOFFSET - sizeof(GameDataPacketHeader)
+
+#define NUMBER_OF_TRIES_IN_RELIABLE_TRANSFER_BEFORE_FAILURE 20 // failed to transfer data N times-stop trying
+#define SINGLE_TRY_IN_RELIABLE_TRANSFER_DELAY 500 // in milliseconds
