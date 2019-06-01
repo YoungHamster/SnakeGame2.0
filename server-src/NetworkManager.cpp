@@ -178,6 +178,9 @@ unsigned long long* NetworkManager::ReliablySendPacketToListOfConnections(const 
 					{
 						connectionsData[i].sentPacket = false;
 					}
+					if(connections[i].packets[j].data[PACKETIDOFFSET] == CONF ||
+						connections[i].packets[j].data[PACKETIDOFFSET] == NOCONF)
+						j = connections[i].packets.size();
 				}
 			}
 			connections[i].lock.unlock();
@@ -236,10 +239,24 @@ bool NetworkManager::RecvPacket()
 	sockaddr_in from;
 	int fromsize = sizeof(from);
 	int recvSize = recvfrom(sock, recvPacketBuffer, MAX_PACKET_SIZE, 0, (sockaddr*)& from, &fromsize);
-	if (recvSize > 0 &&
-		(*(int*)recvPacketBuffer[PROTOCOLIDOFFSET] == UNSAFEPROTOCOLID || *(int*)recvPacketBuffer[PROTOCOLIDOFFSET] == SAFEPROTOCOLID)
-		&& *(int*)recvPacketBuffer[PACKETSIZEOFFSET] == recvSize)
+	if (recvSize > 0 && 
+		(*(int*)recvPacketBuffer[PROTOCOLIDOFFSET] == UNSAFEPROTOCOLID || *(int*)recvPacketBuffer[PROTOCOLIDOFFSET] == SAFEPROTOCOLID))
 	{
+		if (*(int*)recvPacketBuffer[PROTOCOLIDOFFSET] == SAFEPROTOCOLID &&
+			recvPacketBuffer[PACKETIDOFFSET] != CONF &&
+			recvPacketBuffer[PACKETIDOFFSET] != NOCONF)
+		{
+			char packet[DATAOFFSET];
+			if (*(int*)recvPacketBuffer[PACKETSIZEOFFSET] == recvSize)
+				SendPacket(packet, DATAOFFSET, *(unsigned long long*)recvPacketBuffer[CONNECTIONUIDOFFSET], CONF); // inform client that packet was received
+			else
+			{
+				*(PacketHeader*)packet = { UNSAFEPROTOCOLID, DATAOFFSET, CONF, 0};
+				SendUDPPacket(sock, packet, DATAOFFSET, from);
+			}
+		}
+		if (*(int*)recvPacketBuffer[PACKETSIZEOFFSET] != recvSize) return false;
+
 		char* data = new char[recvSize];
 		memcpy(data, recvPacketBuffer, recvSize);
 
