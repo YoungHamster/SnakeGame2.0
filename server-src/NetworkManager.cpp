@@ -129,66 +129,91 @@ bool NetworkManager::ReliablySendPacket(const char* packet, unsigned int packetS
 	}
 }
 
-void NetworkManager::ReliablySendPacketToAll(const char* packet, unsigned int packetSize, unsigned char packetId)
+unsigned long long* NetworkManager::ReliablySendPacketToListOfConnections(const char* packet, unsigned int packetSize, unsigned char packetId, 
+																		 unsigned long long* connectionsUIds, int numberOfConnectionsUIds, 
+																		 int* numberOfConnectionsThatDidntReceivePacket)
 {
 	*(PacketHeader*)packet = { SAFEPROTOCOLID, packetSize, packetId, 0 };
 	unsigned long long* connectionUId = (unsigned long long*) & packet[CONNECTIONUIDOFFSET];
 
-	ConnInfoForRDT* a = new ConnInfoForRDT[maxNumberOfConnections];
+	ConnInfoForRDT* connectionsData = new ConnInfoForRDT[numberOfConnectionsUIds];
 
 	bool done = false;
 	while (!done)
 	{
 		done = true;
-		for (int i = 0; i < maxNumberOfConnections; i++)
+		for (int i = 0; i < numberOfConnectionsUIds; i++)
 		{
-			bool dodone = false; // wtf am i doing?
-			if (!a[i].sentPacket)
+			if (connectionsData[i].failed || connectionsData[i].succeed) continue;
+			/* Will be really slow until start using hash table for connections */
+			Connection* conn = GetConnectionByUId(connectionsUIds[i]);
+
+			bool doneWithThisConnection = false;
+			if (!connectionsData[i].sentPacket)
 			{
 				*connectionUId = connections[i].connectionUId;
 				SendUDPPacket(sock, packet, packetSize, connections[i].address.GetSockaddr());
-				a[i].packetSentTime = clock();
-				a[i].numberOfTries += 1;
-				a[i].sentPacket = true;
+				connectionsData[i].packetSentTime = clock();
+				connectionsData[i].numberOfTries += 1;
+				connectionsData[i].sentPacket = true;
 			}
 
-			if (a[i].numberOfTries > NUMBER_OF_TRIES_IN_RELIABLE_TRANSFER_BEFORE_FAILURE)
+			if (connectionsData[i].numberOfTries > NUMBER_OF_TRIES_IN_RELIABLE_TRANSFER_BEFORE_FAILURE)
 			{
-				dodone = true; // wtf am i doing?
-				a[i].failed = true;
+				doneWithThisConnection = true;
+				connectionsData[i].failed = true;
 			}
 
 			connections[i].lock.lock();
-			for (int i = 0; i < connections[i].packets.size(); i++)
+			for (int j = 0; j < connections[i].packets.size(); j++)
 			{
-				if (*(int*)& connections[i].packets[i].data[PROTOCOLIDOFFSET] == SAFEPROTOCOLID)
+				if (*(int*)& connections[i].packets[j].data[PROTOCOLIDOFFSET] == SAFEPROTOCOLID)
 				{
-					if (connections[i].packets[i].data[PACKETIDOFFSET] == CONF)
+					if (connections[i].packets[j].data[PACKETIDOFFSET] == CONF)
 					{
-						dodone = true;// wtf am i doing?
-						a[i].succeed = true;
+						doneWithThisConnection = true;
+						connectionsData[i].succeed = true;
 					}
-					if (connections[i].packets[i].data[PACKETIDOFFSET] == NOCONF)
+					if (connections[i].packets[j].data[PACKETIDOFFSET] == NOCONF)
 					{
-						a[i].sentPacket = false;
+						connectionsData[i].sentPacket = false;
 					}
 				}
 			}
 			connections[i].lock.unlock();
 
-			if (clock() - a[i].packetSentTime > SINGLE_TRY_IN_RELIABLE_TRANSFER_DELAY)
+			if (clock() - connectionsData[i].packetSentTime > SINGLE_TRY_IN_RELIABLE_TRANSFER_DELAY)
 			{
-				a[i].sentPacket = false;
+				connectionsData[i].sentPacket = false;
 			}
-			done = dodone;// wtf am i doing?
+			/* not done until done with every single connection */
+			if(done) done = doneWithThisConnection;
 		}
 		Sleep(1);
 	}
-}
 
-bool NetworkManager::ReliablySendPacketToListOfConnection(const char* packet, unsigned int packetSize, unsigned char packetId, unsigned long long* connectionsUIds, int numberOfConnectionsUIds)
-{
-	return false;
+	unsigned long long* connectionsThatFailed = nullptr;
+	if (numberOfConnectionsThatDidntReceivePacket != nullptr)
+	{
+		*numberOfConnectionsThatDidntReceivePacket = 0;
+		for (int i = 0; i < numberOfConnectionsUIds; i++)
+		{
+			if (connectionsData[i].failed)* numberOfConnectionsThatDidntReceivePacket += 1;
+		}
+		connectionsThatFailed = new unsigned long long[*numberOfConnectionsThatDidntReceivePacket];
+		int connectionsThatFailedCounter = 0;
+		for (int i = 0; i < numberOfConnectionsUIds; i++)
+		{
+			if (connectionsData[i].failed)
+			{
+				connectionsThatFailed[connectionsThatFailedCounter] = connectionsUIds[i];
+				connectionsThatFailedCounter += 1;
+			}
+		}
+	}
+
+	delete[] connectionsData;
+	return connectionsThatFailed;
 }
 
 Connection* NetworkManager::GetConnectionByUId(unsigned long long connectionUId)

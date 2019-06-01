@@ -30,8 +30,10 @@ public:
 	bool SendPacketToAll(const char* packet, unsigned int packetSize, unsigned char packetId);
 	bool SendPacketToListOfConnection(const char* packet, unsigned int packetSize, unsigned char packetId, unsigned long long* connectionsUIds, int numberOfConnectionsUIds);
 	bool ReliablySendPacket(const char* packet, unsigned int packetSize, unsigned long long connectionUId, unsigned char packetId);
-	void ReliablySendPacketToAll(const char* packet, unsigned int packetSize, unsigned char packetId);
-	bool ReliablySendPacketToListOfConnection(const char* packet, unsigned int packetSize, unsigned char packetId, unsigned long long* connectionsUIds, int numberOfConnectionsUIds);
+	/* Returns array of UIds of connections that didn't receive packet by any reason */
+	unsigned long long* ReliablySendPacketToListOfConnections(const char* packet, unsigned int packetSize, unsigned char packetId, 
+															 unsigned long long* connectionsUIds, int numberOfConnectionsUIds, 
+															 int* numberOfConnectionsThatDidntReceivePacket);
 	bool RecvPacket();
 	bool AcceptConnection();
 	void Disconnect(unsigned long long connectionUId);
