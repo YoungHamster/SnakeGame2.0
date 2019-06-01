@@ -13,9 +13,19 @@ bool NetworkEngine::RecvPacket()
 	int recvSize = recvfrom(sock, recvPacketBuffer, MAX_PACKET_SIZE, 0, (sockaddr*)& from, &fromsize);
 	if (Address(from) != serverAddress) return false;
 	if (recvSize > 0 && 
-		(*(int*)recvPacketBuffer[PROTOCOLIDOFFSET] == UNSAFEPROTOCOLID || *(int*)recvPacketBuffer[PROTOCOLIDOFFSET] == SAFEPROTOCOLID)
-		&& *(int*)recvPacketBuffer[PACKETSIZEOFFSET] == recvSize)
+		(*(int*)recvPacketBuffer[PROTOCOLIDOFFSET] == UNSAFEPROTOCOLID || *(int*)recvPacketBuffer[PROTOCOLIDOFFSET] == SAFEPROTOCOLID))
 	{
+		if (*(int*)recvPacketBuffer[PROTOCOLIDOFFSET] == SAFEPROTOCOLID &&
+			recvPacketBuffer[PACKETIDOFFSET] != CONF &&
+			recvPacketBuffer[PACKETIDOFFSET] != NOCONF)
+		{
+			if(*(int*)recvPacketBuffer[PACKETSIZEOFFSET] == recvSize)
+				SendPacket(sendPacketBuffer, DATAOFFSET, connectionUId, CONF); // inform server that packet was received
+			else
+				SendPacket(sendPacketBuffer, DATAOFFSET, connectionUId, NOCONF); // inform server that packet wasn't received
+		}
+		if (*(int*)recvPacketBuffer[PACKETSIZEOFFSET] != recvSize) return false;
+
 		char* data = new char[recvSize];
 		memcpy(data, recvPacketBuffer, recvSize);
 		receivedPackets.push_back({ Address(from), recvSize, data, clock() });
@@ -80,6 +90,11 @@ void NetworkEngine::ProcessIncomingPacket()
 	default:  break;
 	}
 	receivedPackets.erase(receivedPackets.begin());
+}
+
+void NetworkEngine::StartGame()
+{
+	// TODO
 }
 
 NetworkEngine::NetworkEngine(){}
