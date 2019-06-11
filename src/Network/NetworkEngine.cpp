@@ -67,7 +67,7 @@ bool NetworkEngine::CollectGameDataFromPackets()
 				GameDataPacketHeader gdph = *(GameDataPacketHeader*)& receivedPackets[i].data[DATAOFFSET];
 				if (gdph.tickNumber == currentTickNumber)
 				{
-					memcpy(&currentTickGameData[FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET * gdph.packetNumber],
+					memcpy(&currentTickGameData[(FREE_PLACE_IN_SINGLE_PACKET - sizeof(GameDataPacketHeader)) * gdph.packetNumber],
 						   &receivedPackets[i].data[DATAOFFSET + sizeof(GameDataPacketHeader)],
 						   receivedPackets[i].size - (DATAOFFSET + sizeof(GameDataPacketHeader)));
 				}
