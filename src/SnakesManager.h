@@ -14,6 +14,7 @@ public:
 
 	/* physw and physh are sizes of gamefield */
 	SnakesManager(int physw, int physh, int supposedMaxSizeOfSnakeBody);
+	SnakesManager(int maxNumberOfSnakes, int supposedMaxSizeOfSnakeBody);
 	~SnakesManager();
 	Snake* NewSnake();
 	SnakeBlock* AddBlockToSnake(int snake_id, SnakeBlock snakeBlock);

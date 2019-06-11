@@ -29,6 +29,9 @@ private:
 	void EndGame();
 	void SendGameDataToPlayers();
 
+	int CountNumberOfPackets(int dataSize, int sizeOfAdditionalHeaders, int* lastPacketSize);
+	void DeleteFailedConnections(unsigned long long* failedConnectionsUIds, unsigned long long* fullListOfConnectionsUIds,
+								 int numberOfFailedConnections, int sizeOfFullListOfConnectionsUIds);
 public:
 	GameRoom(NetworkManager* net, int gameFieldWidth, int gameFieldHeight);
 	~GameRoom();
