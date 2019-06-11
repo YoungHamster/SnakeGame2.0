@@ -52,7 +52,9 @@ bool NetworkManager::SendPacket(const char* packet, int packetSize, sockaddr_in 
 bool NetworkManager::SendPacket(const char* packet, unsigned int packetSize, unsigned long long connectionUId, unsigned char packetId)
 {
 	*(PacketHeader*)packet = { UNSAFEPROTOCOLID, packetSize, packetId, connectionUId };
-	return SendUDPPacket(sock, packet, packetSize, GetConnectionByUId(connectionUId)->address.GetSockaddr());
+	Connection* conn = GetConnectionByUId(connectionUId);
+	if (conn == nullptr) return false;
+	return SendUDPPacket(sock, packet, packetSize, conn->address.GetSockaddr());
 }
 
 bool NetworkManager::SendPacketToAll(const char* packet, unsigned int packetSize, unsigned char packetId)
@@ -85,6 +87,7 @@ bool NetworkManager::ReliablySendPacket(const char* packet, unsigned int packetS
 {
 	*(PacketHeader*)packet = { SAFEPROTOCOLID, packetSize, packetId, connectionUId };
 	Connection* conn = GetConnectionByUId(connectionUId);
+	if (conn == nullptr) return false;
 	clock_t packetSentTime;
 	bool failed = false;
 	bool sentPacket = false;
@@ -147,12 +150,17 @@ unsigned long long* NetworkManager::ReliablySendPacketToListOfConnections(const 
 			if (connectionsData[i].failed || connectionsData[i].succeed) continue;
 			/* Will be really slow until start using hash table for connections */
 			Connection* conn = GetConnectionByUId(connectionsUIds[i]);
+			if (conn == nullptr)
+			{
+				connectionsData[i].failed = false;
+				continue;
+			}
 
 			bool doneWithThisConnection = false;
 			if (!connectionsData[i].sentPacket)
 			{
-				*connectionUId = connections[i].connectionUId;
-				SendUDPPacket(sock, packet, packetSize, connections[i].address.GetSockaddr());
+				*connectionUId = conn->connectionUId;
+				SendUDPPacket(sock, packet, packetSize, conn->address.GetSockaddr());
 				connectionsData[i].packetSentTime = clock();
 				connectionsData[i].numberOfTries += 1;
 				connectionsData[i].sentPacket = true;
@@ -164,26 +172,26 @@ unsigned long long* NetworkManager::ReliablySendPacketToListOfConnections(const 
 				connectionsData[i].failed = true;
 			}
 
-			connections[i].lock.lock();
-			for (int j = 0; j < connections[i].packets.size(); j++)
+			conn->lock.lock();
+			for (int j = 0; j < conn->packets.size(); j++)
 			{
-				if (*(int*)& connections[i].packets[j].data[PROTOCOLIDOFFSET] == SAFEPROTOCOLID)
+				if (*(int*)& conn->packets[j].data[PROTOCOLIDOFFSET] == SAFEPROTOCOLID)
 				{
-					if (connections[i].packets[j].data[PACKETIDOFFSET] == CONF)
+					if (conn->packets[j].data[PACKETIDOFFSET] == CONF)
 					{
 						doneWithThisConnection = true;
 						connectionsData[i].succeed = true;
 					}
-					if (connections[i].packets[j].data[PACKETIDOFFSET] == NOCONF)
+					if (conn->packets[j].data[PACKETIDOFFSET] == NOCONF)
 					{
 						connectionsData[i].sentPacket = false;
 					}
-					if(connections[i].packets[j].data[PACKETIDOFFSET] == CONF ||
-						connections[i].packets[j].data[PACKETIDOFFSET] == NOCONF)
-						j = connections[i].packets.size();
+					if(conn->packets[j].data[PACKETIDOFFSET] == CONF ||
+						conn->packets[j].data[PACKETIDOFFSET] == NOCONF)
+						j = conn->packets.size();
 				}
 			}
-			connections[i].lock.unlock();
+			conn->lock.unlock();
 
 			if (clock() - connectionsData[i].packetSentTime > SINGLE_TRY_IN_RELIABLE_TRANSFER_DELAY)
 			{
@@ -221,6 +229,7 @@ unsigned long long* NetworkManager::ReliablySendPacketToListOfConnections(const 
 
 Connection* NetworkManager::GetConnectionByUId(unsigned long long connectionUId)
 {
+	if (connectionUId == 0) return nullptr;
 	for (int i = 0; i < maxNumberOfConnections; i++)
 	{
 		connections[i].lock.lock();

@@ -245,6 +245,11 @@ void GamePlayEngine_server::MoveSnakes()
 	delete[] isSnakeDead;
 }
 
+void GamePlayEngine_server::SetAppleSpawnFrequency(int applesPerTick)
+{
+	appleSpawnFrequency = applesPerTick;
+}
+
 void GamePlayEngine_server::ChangeSnakeDirection(int snake_id, char dir)
 {
 	if (*number_of_snakes == 0 || snake_id > * number_of_snakes)
@@ -259,11 +264,27 @@ void GamePlayEngine_server::ChangeSnakeDirection(int snake_id, char dir)
 	snakesManager.snakes[snake_id].newdir = dir;
 }
 
-// TODO
+void GamePlayEngine_server::StartGame(int numberOfSnakes, int snakesSizes)
+{
+	KillAllSnakes();
+	for (int i = 0; i < physw*physh; i++)
+	{
+		if (physics[i].type == APPLE) physics[i].type = NOTHING;
+	}
+	for (int i = 0; i < numberOfSnakes; i++)
+	{
+		SpawnSnake(snakesSizes, physw/2, physh - 2 - (i *2), LEFT, realPlayer);
+	}
+}
+
 void GamePlayEngine_server::GameTick()
 {
 	tickNumber += 1;
-	
+	for (int i = 0; i < appleSpawnFrequency; i++)
+	{
+		SpawnApple();
+	}
+	MoveSnakes();
 }
 
 bool GamePlayEngine_server::IsAnyPlayerAlive()
@@ -353,4 +374,14 @@ int GamePlayEngine_server::GetNumberOfApples()
 		}
 	}
 	return numberOfApples;
+}
+
+int GamePlayEngine_server::GetPhysicsSize()
+{
+	return physw*physh;
+}
+
+const PhysicalObject * GamePlayEngine_server::GetPhysics()
+{
+	return physics;
 }

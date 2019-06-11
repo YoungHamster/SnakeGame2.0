@@ -57,11 +57,46 @@ void GameRoom::ProcessPlayersInput()
 void GameRoom::StartGame()
 {
 	state = game;
+	gamePlayEngine.StartGame(players.size(), DEFAULT_SNAKE_SIZE);
+	int lastPacketSize;
+	int numberOfPackets = CountNumberOfPackets(gamePlayEngine.GetPhysicsSize()*sizeof(PhysicalObject), 
+											   sizeof(unsigned short), &lastPacketSize);
+	int numberOfPlayersUIds = players.size();
+	unsigned long long* playersUIds = new unsigned long long[numberOfPlayersUIds];
+	for (int i = 0; i < numberOfPlayersUIds; i++)
+		playersUIds[i] = players[i].connectionUID;
+
+	const char* physics = (char*)gamePlayEngine.GetPhysics();
+	for (unsigned short i = 0; i < numberOfPackets; i++)
+	{
+		memcpy(&sendPacketBuffer[DATAOFFSET + sizeof(unsigned short)],
+			   &physics[i * (FREE_PLACE_IN_SINGLE_PACKET - sizeof(unsigned short))],
+			   (FREE_PLACE_IN_SINGLE_PACKET - sizeof(unsigned short)));
+		*(unsigned short*)&sendPacketBuffer[DATAOFFSET] = i;
+		int packetSize = i == numberOfPackets ? lastPacketSize : SUPPOSED_MTU;
+		int numOfConnsDidntRecvPacket;//number of connections that didn't receive packet
+		unsigned long long* failedConnections = net->ReliablySendPacketToListOfConnections(sendPacketBuffer, packetSize,
+																						   STARTGAME, playersUIds,
+																						   numberOfPlayersUIds, &numOfConnsDidntRecvPacket);
+		DeleteFailedConnections(failedConnections, playersUIds, numOfConnsDidntRecvPacket, players.size());
+		if (failedConnections) delete[] failedConnections;
+	}
+	delete[] playersUIds;
 }
 
 void GameRoom::PauseGame()
 {
 	state = pauseGame;
+	unsigned long long* playersUIds = new unsigned long long[players.size()];
+	for (int i = 0; i < players.size(); i++)
+		playersUIds[i] = players[i].connectionUID;
+
+	int numOfConnsDidntRecvPacket;//number of connections that didn't receive packet
+	unsigned long long* failedConnections = net->ReliablySendPacketToListOfConnections(sendPacketBuffer, DATAOFFSET,
+																					   PAUSEGAME, playersUIds,
+																					   players.size(), &numOfConnsDidntRecvPacket);
+	DeleteFailedConnections(failedConnections, playersUIds, numOfConnsDidntRecvPacket, players.size());
+	if(failedConnections) delete[] failedConnections;
 }
 
 void GameRoom::EndGame()
@@ -73,28 +108,64 @@ void GameRoom::SendGameDataToPlayers()
 {
 	int gameDataSize;
 	char* gameData = gamePlayEngine.GetGameData(&gameDataSize);
-	int numberOfPackets = gameDataSize % (FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET) == 0 ? /* Check if gameDataSize / (free palce for data in single packet) is whole number
-																								   and if it's not add 1 to numberOfPackets*/
-		gameDataSize / (FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET) : gameDataSize / (FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET) + 1;
+	int lastPacketSize;
+	int numberOfPackets = CountNumberOfPackets(gameDataSize, sizeof(GameDataPacketHeader), &lastPacketSize);
 	if (numberOfPackets >= 255)
 	{
 		delete[] gameData;
 		return;
 	}
-	int lastPacketSize = (gameDataSize % (FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET) == 0) ? SUPPOSED_MTU : 
-		(gameDataSize % (FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET) + DATAOFFSET + sizeof(GameDataPacketHeader));
 
 	GameDataPacketHeader gdph;
 	gdph.tickNumber = (*(GameDataHeader*)gameData).tickNumber;
 	for (unsigned char i = 0; i < numberOfPackets; i++)
 	{
 		int packetSize = i == numberOfPackets - 1 ? lastPacketSize : SUPPOSED_MTU;
-		memcpy(&sendPacketBuffer[DATAOFFSET + sizeof(GameDataPacketHeader)], &gameData[i * (FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET)], packetSize - DATAOFFSET - sizeof(GameDataPacketHeader));
+		memcpy(&sendPacketBuffer[DATAOFFSET + sizeof(GameDataPacketHeader)], &gameData[i * (FREE_PLACE_IN_SINGLE_PACKET - sizeof(GameDataPacketHeader))], packetSize - DATAOFFSET - sizeof(GameDataPacketHeader));
 		gdph.packetNumber = i;
 		*(GameDataPacketHeader*)& sendPacketBuffer[DATAOFFSET] = gdph;
 		net->SendPacketToAll(sendPacketBuffer, packetSize, GAMEDATA);
 	}
 	delete[] gameData;
+}
+
+int GameRoom::CountNumberOfPackets(int dataSize, int sizeOfAdditionalHeaders, int* lastPacketSize)
+{
+	/* Check if dataSize / (free palce for data in single packet) is whole number and if it's not add 1 to numberOfPackets and compute lastPacketSize*/
+	int numberOfPackets;
+	if (dataSize % (FREE_PLACE_IN_SINGLE_PACKET - sizeOfAdditionalHeaders) == 0)
+	{
+		numberOfPackets = dataSize / (FREE_PLACE_IN_SINGLE_PACKET - sizeOfAdditionalHeaders);
+		*lastPacketSize = SUPPOSED_MTU;
+	}
+	else
+	{
+		numberOfPackets = dataSize / (FREE_PLACE_IN_SINGLE_PACKET - sizeOfAdditionalHeaders) + 1;
+		*lastPacketSize = (dataSize % (FREE_PLACE_IN_SINGLE_PACKET - sizeOfAdditionalHeaders) + DATAOFFSET + sizeOfAdditionalHeaders);
+	}
+	return numberOfPackets;
+}
+
+void GameRoom::DeleteFailedConnections(unsigned long long * failedConnectionsUIds, unsigned long long* fullListOfConnectionsUIds,
+									   int numberOfFailedConnections, int sizeOfFullListOfConnectionsUIds)
+{
+	if (numberOfFailedConnections > 0)
+	{
+		int disconnectedPlayersCounter = 0;
+		for (int j = 0; j < players.size(); j++)
+		{
+			if (players[j].connectionUID == failedConnectionsUIds[disconnectedPlayersCounter])
+			{
+				net->Disconnect(failedConnectionsUIds[disconnectedPlayersCounter]);
+				players.erase(players.begin() + j);
+				j -= 1;
+				memcpy(&fullListOfConnectionsUIds[j],
+					   &fullListOfConnectionsUIds[j + 1],
+					   (sizeOfFullListOfConnectionsUIds - j) * sizeof(unsigned long long));
+				disconnectedPlayersCounter += 1;
+			}
+		}
+	}
 }
 
 GameRoom::GameRoom(NetworkManager* net, int gameFieldWidth, int gameFieldHeight)

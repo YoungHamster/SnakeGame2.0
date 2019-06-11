@@ -16,6 +16,20 @@ SnakesManager::SnakesManager(int physw, int physh, int supposedMaxSizeOfSnakeBod
 	}
 }
 
+SnakesManager::SnakesManager(int maxNumberOfSnakes, int supposedMaxSizeOfSnakeBody)
+	:numberOfAllocatedSnakes(maxNumberOfSnakes)
+{
+	/* Allocate memory for snakes with a big margin */
+	snakes = (Snake*)malloc(sizeof(Snake) * numberOfAllocatedSnakes);
+	snakesBodies = (SnakeBlock*)malloc(sizeof(SnakeBlock) * numberOfAllocatedSnakes * supposedMaxSizeOfSnakeBody);
+	if (snakes == nullptr || snakesBodies == nullptr) __debugbreak();
+	for (int i = 0; i < numberOfAllocatedSnakes; i++)
+	{
+		snakes[i] = Snake();
+		snakes[i].body = snakesBodies + (unsigned long long)i * supposedMaxSizeOfSnakeBody;
+	}
+}
+
 SnakesManager::~SnakesManager()
 {
 	for (int i = 0; i < numberOfAllocatedSnakes; i++)

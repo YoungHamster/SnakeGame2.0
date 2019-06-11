@@ -85,6 +85,8 @@ enum PacketsIDs
 	PING = 0x02,
 	PONG = 0x03,
 	GAMEDATA = 0x04,
+	STARTGAME = 0x05,
+	PAUSEGAME = 0x06,
 	NOCONF = 0xfd,
 	CONF = 0xfe, // Confirmation that packet was received(used to reliably transfer data through UDP connections)
 	DISCONNECT = 0xff
@@ -142,7 +144,7 @@ struct GameDataPacketHeader
 
 #define SUPPOSED_MTU 1350
 #define MAX_PACKET_SIZE SUPPOSED_MTU
-#define FREE_PLACE_IN_SINGLE_GAMEDATA_PACKET SUPPOSED_MTU - DATAOFFSET - sizeof(GameDataPacketHeader)
+#define FREE_PLACE_IN_SINGLE_PACKET SUPPOSED_MTU - DATAOFFSET
 
 #define NUMBER_OF_TRIES_IN_RELIABLE_TRANSFER_BEFORE_FAILURE 20 // failed to transfer data N times-stop trying
 #define SINGLE_TRY_IN_RELIABLE_TRANSFER_DELAY 500 // in milliseconds

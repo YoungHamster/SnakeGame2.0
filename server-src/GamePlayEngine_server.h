@@ -5,6 +5,8 @@
 #include "src//SnakesManager.h"
 #include "NetworkBase//NetworkBase.h"
 
+#define DEFAULT_SNAKE_SIZE 3
+
 class GamePlayEngine_server
 {
 private:
@@ -63,10 +65,13 @@ public:
 	void SetAppleSpawnFrequency(int applesPerTick);
 	void ChangeSnakeDirection(int snake_id, char dir);
 
+	void StartGame(int numberOfSnakes, int snakesSizes);
 	void GameTick();
 
 	char* GetGameData(int* dataSize);
 	int GetNumberOfSnakes();
 	int GetNumberOfSnakeBlocks();
 	int GetNumberOfApples();
+	int GetPhysicsSize();
+	const PhysicalObject* GetPhysics();
 };
