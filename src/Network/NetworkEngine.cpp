@@ -6,6 +6,50 @@ bool NetworkEngine::SendPacket(const char* packet, unsigned int packetSize, unsi
 	return SendUDPPacket(sock, packet, packetSize, serverAddress.GetSockaddr());
 }
 
+bool NetworkEngine::ReliablySendPacket(const char* packet, unsigned int packetSize, unsigned char packetId)
+{
+	*(PacketHeader*)packet = { SAFEPROTOCOLID, packetSize, packetId, connectionUId };
+	if (connectionState == DISCONNECTED) return false;
+	clock_t packetSentTime;
+	bool failed = false;
+	bool sentPacket = false;
+	unsigned int numberOfTries = 0;
+	while (!failed)
+	{
+		if (!sentPacket)
+		{
+			SendUDPPacket(sock, packet, packetSize, serverAddress.GetSockaddr());
+			packetSentTime = clock();
+			numberOfTries += 1;
+			sentPacket = true;
+		}
+		if (numberOfTries > NUMBER_OF_TRIES_IN_RELIABLE_TRANSFER_BEFORE_FAILURE)
+		{
+			return false;
+		}
+		for (int i = 0; i < receivedPackets.size(); i++)
+		{
+			if (*(int*)& receivedPackets[i].data[PROTOCOLIDOFFSET] == SAFEPROTOCOLID)
+			{
+				if (receivedPackets[i].data[PACKETIDOFFSET] == CONF)
+				{
+					return true;
+				}
+				if (receivedPackets[i].data[PACKETIDOFFSET] == NOCONF)
+				{
+					sentPacket = false;
+				}
+			}
+		}
+		if (clock() - packetSentTime > SINGLE_TRY_IN_RELIABLE_TRANSFER_DELAY)
+		{
+			sentPacket = false;
+		}
+		Sleep(1);
+	}
+	return false;
+}
+
 bool NetworkEngine::RecvPacket()
 {
 	sockaddr_in from;
@@ -94,7 +138,8 @@ void NetworkEngine::ProcessIncomingPacket()
 
 void NetworkEngine::StartGame()
 {
-	// TODO
+	ReliablySendPacket(sendPacketBuffer, DATAOFFSET, STARTGAME);
+	//TODO
 }
 
 NetworkEngine::NetworkEngine(){}
