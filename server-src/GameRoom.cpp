@@ -59,26 +59,31 @@ void GameRoom::StartGame()
 	state = game;
 	gamePlayEngine.StartGame(players.size(), DEFAULT_SNAKE_SIZE);
 	int lastPacketSize;
-	int numberOfPackets = CountNumberOfPackets(gamePlayEngine.GetPhysicsSize()*sizeof(PhysicalObject), 
-											   sizeof(unsigned short), &lastPacketSize);
+	unsigned int numberOfPackets = CountNumberOfPackets(gamePlayEngine.GetPhysicsSize()*sizeof(PhysicalObject), 
+														2/*sizeof(unsigned char) * 2*/, &lastPacketSize);
+	if (numberOfPackets > 255)
+	{
+		std::cout << "ERROR! Physics array is too big, can't start game" << std::endl;
+	}
 	int numberOfPlayersUIds = players.size();
 	unsigned long long* playersUIds = new unsigned long long[numberOfPlayersUIds];
 	for (int i = 0; i < numberOfPlayersUIds; i++)
 		playersUIds[i] = players[i].connectionUID;
 
 	const char* physics = (char*)gamePlayEngine.GetPhysics();
-	for (unsigned short i = 0; i < numberOfPackets; i++)
+	for (unsigned char i = 0; i < numberOfPackets; i++)
 	{
-		memcpy(&sendPacketBuffer[DATAOFFSET + sizeof(unsigned short)],
-			   &physics[i * (FREE_PLACE_IN_SINGLE_PACKET - sizeof(unsigned short))],
-			   (FREE_PLACE_IN_SINGLE_PACKET - sizeof(unsigned short)));
-		*(unsigned short*)&sendPacketBuffer[DATAOFFSET] = i;
+		memcpy(&sendPacketBuffer[DATAOFFSET + 2/*sizeof(unsigned char) * 2*/],
+			   &physics[i * (FREE_PLACE_IN_SINGLE_PACKET - 2/*sizeof(unsigned char) * 2*/)],
+			   (FREE_PLACE_IN_SINGLE_PACKET - 2/*sizeof(unsigned char) * 2*/));
+		*(unsigned char*)& sendPacketBuffer[DATAOFFSET] = i;
+		*(unsigned char*)& sendPacketBuffer[DATAOFFSET + 1] = (unsigned char)numberOfPackets;
 		int packetSize = i == numberOfPackets ? lastPacketSize : SUPPOSED_MTU;
-		int numOfConnsDidntRecvPacket;//number of connections that didn't receive packet
+		int nocdntrp;//number of connections that didn't receive packet
 		unsigned long long* failedConnections = net->ReliablySendPacketToListOfConnections(sendPacketBuffer, packetSize,
 																						   STARTGAME, playersUIds,
-																						   numberOfPlayersUIds, &numOfConnsDidntRecvPacket);
-		DeleteFailedConnections(failedConnections, playersUIds, numOfConnsDidntRecvPacket, players.size());
+																						   numberOfPlayersUIds, &nocdntrp);
+		DeleteFailedConnections(failedConnections, playersUIds, nocdntrp, players.size());
 		if (failedConnections) delete[] failedConnections;
 	}
 	delete[] playersUIds;
