@@ -136,9 +136,48 @@ void NetworkEngine::ProcessIncomingPacket()
 	receivedPackets.erase(receivedPackets.begin());
 }
 
-void NetworkEngine::StartGame()
+bool NetworkEngine::StartGame()
 {
 	ReliablySendPacket(sendPacketBuffer, DATAOFFSET, STARTGAME);
+	clock_t startTime = clock();
+	bool receivedFirstPacket = false;
+	bool* receivedPhysicsPackets;
+	unsigned char numberOfPackets = 0;
+	bool receivedPhysics = false;
+	bool DONE = false;
+	while (!DONE)
+	{
+		for (int i = 0; i < receivedPackets.size(); i++)
+		{
+			if (receivedPackets[i].data[PACKETIDOFFSET] == STARTGAME)
+			{
+				if (!receivedFirstPacket)
+				{
+					if (gamePlayData.physics)
+						delete[] gamePlayData.physics;
+					numberOfPackets = *(unsigned char*)& receivedPackets[i].data[DATAOFFSET + 1];
+					gamePlayData.physics = new PhysicalObject[numberOfPackets];
+					receivedPhysicsPackets = new bool[numberOfPackets];
+					memset(receivedPhysicsPackets, false, numberOfPackets);
+				} 
+				char* gpdphys = (char*)gamePlayData.physics;//char type to count offsets in bytes
+				memcpy(&gpdphys[(FREE_PLACE_IN_SINGLE_PACKET - 2/*sizeof(unsigned char) * 2*/) *
+					   *(unsigned char*)& receivedPackets[i].data[DATAOFFSET]],
+					   &receivedPackets[i].data[DATAOFFSET + 2/*sizeof(unsigned char) * 2*/],
+					   (FREE_PLACE_IN_SINGLE_PACKET - 2/*sizeof(unsigned char) * 2*/));
+				receivedPhysicsPackets[*(unsigned char*)& receivedPackets[i].data[DATAOFFSET]] = true;
+				receivedPackets.erase(receivedPackets.begin() + i);
+				i -= 1;
+			}
+		}
+		unsigned char numberOfReceivedPackets = 0;
+		for (int i = 0; i < numberOfPackets; i++)
+			if (receivedPhysicsPackets[i]) numberOfReceivedPackets += 1;
+		receivedPhysics = numberOfReceivedPackets == numberOfPackets;
+		DONE = receivedPhysics || (clock() - startTime > SINGLE_TRY_IN_RELIABLE_TRANSFER_DELAY * 10);
+	}
+	if (receivedPhysicsPackets) delete[] receivedPhysicsPackets;
+	if (!receivedPhysics) return false;
 	//TODO
 }
 
